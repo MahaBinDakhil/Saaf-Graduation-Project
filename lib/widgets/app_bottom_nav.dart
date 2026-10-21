@@ -45,32 +45,31 @@ class AppBottomNavigationBar extends StatelessWidget {
       navigator.push(MaterialPageRoute<void>(builder: (_) => page));
     }
   }
-
   @override
   Widget build(BuildContext context) {
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
         boxShadow: [
           BoxShadow(
-            color: Color(0x10000000),
-            blurRadius: 10,
-            offset: Offset(0, -3),
+            color: Color(0x14000000),
+            blurRadius: 18,
+            offset: Offset(0, -4),
           ),
         ],
       ),
       child: SafeArea(
         top: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(8, 5, 8, 3),
-          child: SizedBox(
-            height: 60,
-            child: Row(
+        child: SizedBox(
+          height: 78,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
                 child: _NavItem(
                   icon: Icons.home_outlined,
+                  activeIcon: Icons.home_rounded,
                   label: 'Home',
                   isSelected: current == NavTab.home,
                   onTap: onHomeTap ?? (() => _goTo(context, NavTab.home)),
@@ -78,49 +77,41 @@ class AppBottomNavigationBar extends StatelessWidget {
               ),
               Expanded(
                 child: _NavItem(
-                  icon: Icons.forum,
+                  icon: Icons.chat_bubble_outline_rounded,
+                  activeIcon: Icons.chat_bubble_outline_rounded,
                   label: 'Chatbot',
                   isSelected: current == NavTab.chatbot,
-                  onTap: onChatbotTap ?? (() => _goTo(context, NavTab.chatbot)),
+                  onTap:
+                      onChatbotTap ?? (() => _goTo(context, NavTab.chatbot)),
                 ),
               ),
               Expanded(
-                child: Center(
-                  child: InkWell(
-                    onTap: onFrameTap ?? (() => _goTo(context, NavTab.scan)),
-                    customBorder: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(18),
-                      child: Image.asset(
-                        'assets/images/scan_button.png',
-                        width: 58,
-                        height: 58,
-                        fit: BoxFit.contain,
-                      ),
-                    ),
-                  ),
+                child: _ScanItem(
+                  isSelected: current == NavTab.scan,
+                  onTap: onFrameTap ?? (() => _goTo(context, NavTab.scan)),
                 ),
               ),
               Expanded(
                 child: _NavItem(
-                  icon: Icons.history,
+                  icon: Icons.history_rounded,
+                  activeIcon: Icons.history_rounded,
                   label: 'History',
                   isSelected: current == NavTab.history,
-                  onTap: onHistoryTap ?? (() => _goTo(context, NavTab.history)),
+                  onTap:
+                      onHistoryTap ?? (() => _goTo(context, NavTab.history)),
                 ),
               ),
               Expanded(
                 child: _NavItem(
-                  icon: Icons.settings,
+                  icon: Icons.settings_outlined,
+                  activeIcon: Icons.settings_outlined,
                   label: 'Settings',
                   isSelected: current == NavTab.settings,
-                  onTap: onSettingsTap ?? (() => _goTo(context, NavTab.settings)),
+                  onTap: onSettingsTap ??
+                      (() => _goTo(context, NavTab.settings)),
                 ),
               ),
             ],
-          ),
           ),
         ),
       ),
@@ -128,39 +119,113 @@ class AppBottomNavigationBar extends StatelessWidget {
   }
 }
 
+// One tab: icon in a lime pill when selected, label under it.
 class _NavItem extends StatelessWidget {
   const _NavItem({
     required this.icon,
+    required this.activeIcon,
     required this.label,
     required this.onTap,
     this.isSelected = false,
   });
 
   final IconData icon;
+  final IconData activeIcon;
   final String label;
+  final VoidCallback onTap;
+  final bool isSelected;
+
+  static const Color _inactive = Color(0xFF8A938E);
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      splashColor: Colors.transparent,
+      highlightColor: Colors.transparent,
+      child: Padding(
+        padding: const EdgeInsets.only(top: 12),
+        child: Column(
+          children: [
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: 52,
+              height: 30,
+              decoration: BoxDecoration(
+                color: isSelected ? AppColors.lime : Colors.transparent,
+                borderRadius: BorderRadius.circular(15),
+              ),
+              child: Icon(
+                isSelected ? activeIcon : icon,
+                size: 22,
+                color: isSelected ? AppColors.primary : _inactive,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 10.5,
+                color: isSelected ? AppColors.primary : _inactive,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// Middle Scan button: dark green circle with the palm logo.
+class _ScanItem extends StatelessWidget {
+  const _ScanItem({required this.onTap, this.isSelected = false});
+
   final VoidCallback onTap;
   final bool isSelected;
 
   @override
   Widget build(BuildContext context) {
-    final color = isSelected ? AppColors.forest : AppColors.navInactive;
-
-    return InkWell(
+    return GestureDetector(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: SizedBox(
-        height: 54,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 27, color: color),
-            const SizedBox(height: 1),
-            Text(
-              label,
-              style: TextStyle(color: color, fontSize: 10),
+      behavior: HitTestBehavior.opaque,
+      child: Column(
+        children: [
+          Container(
+            width: 54,
+            height: 54,
+            decoration: BoxDecoration(
+              color: AppColors.primary,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primary.withValues(alpha: 0.28),
+                  blurRadius: 14,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
-          ],
-        ),
+                        child: ClipOval(
+              child: Transform.translate(
+                // The star is a bit left/down inside the image, so move it back.
+                offset: const Offset(1.4, -2.5),
+                child: Transform.scale(
+                  scale: 1.45,
+                  child: Image.asset('assets/images/logo_light.png'),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Scan',
+            style: TextStyle(
+              fontSize: 11,
+              color: AppColors.primary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
       ),
     );
   }
