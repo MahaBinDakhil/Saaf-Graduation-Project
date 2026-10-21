@@ -7,6 +7,8 @@ import 'forgot_password.dart';
 import 'services/auth_service.dart';
 import 'firebase_options.dart';
 import 'home_page.dart';
+import 'dart:async';
+import 'theme/app_colors.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -57,38 +59,151 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
+  int _activeDot = 0;
+  Timer? _dotsTimer;
+
   @override
   void initState() {
     super.initState();
 
-    Future.delayed(const Duration(seconds: 7), () {
-      if (!mounted) return;
+    // Animate the 3 loading dots.
+    _dotsTimer = Timer.periodic(const Duration(milliseconds: 450), (_) {
+      if (mounted) setState(() => _activeDot = (_activeDot + 1) % 3);
+    });
 
+    Future.delayed(const Duration(seconds: 4), () {
+      if (!mounted) return;
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(
-          builder: (context) => const OnboardingScreen(),
-        ),
+        MaterialPageRoute(builder: (context) => const OnboardingScreen()),
       );
     });
   }
 
   @override
+  void dispose() {
+    _dotsTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: onboardingBackground,
-      body: Center(
-        child: Image.asset(
-          'assets/images/splash_palm.png',
-          width: 300,
-          height: 300,
-          fit: BoxFit.contain,
-        ),
+      backgroundColor: AppColors.primary,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          // Background photo
+          Image.asset('assets/images/splash_bg.jpg', fit: BoxFit.cover),
+
+          // Dark green overlay (lighter at top, darker at bottom)
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  const Color(0xFF173F2C).withValues(alpha: 0.55),
+                  const Color(0xFF173F2C).withValues(alpha: 0.70),
+                  const Color(0xFF0F2A1D).withValues(alpha: 0.95),
+                ],
+                stops: const [0.0, 0.55, 1.0],
+              ),
+            ),
+          ),
+
+          SafeArea(
+            child: Column(
+              children: [
+                const Spacer(flex: 5),
+
+                // Logo in a glass circle with a soft green glow
+                Container(
+                  width: 140,
+                  height: 140,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withValues(alpha: 0.14),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.45),
+                      width: 1.2,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.lime.withValues(alpha: 0.35),
+                        blurRadius: 60,
+                        spreadRadius: 4,
+                      ),
+                    ],
+                  ),
+                                    child: ClipOval(
+                    child: Transform.scale(
+                      scale: 1.5,
+                      child: Image.asset('assets/images/logo_light.png'),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 28),
+
+                const Text(
+                  "Sa'af",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 44,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Smart care for your date palms',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.85),
+                    fontSize: 16,
+                  ),
+                ),
+
+                const Spacer(flex: 6),
+
+                // Loading dots
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(3, (i) {
+                    final active = i == _activeDot;
+                    return AnimatedContainer(
+                      duration: const Duration(milliseconds: 250),
+                      margin: const EdgeInsets.symmetric(horizontal: 3),
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: active
+                            ? AppColors.lime
+                            : AppColors.lime.withValues(alpha: 0.35),
+                      ),
+                    );
+                  }),
+                ),
+
+                const SizedBox(height: 40),
+
+                Text(
+                  'AI-powered palm diagnosis',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.6),
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(height: 28),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 }
-
 // ============================================================
 // ONBOARDING
 // ============================================================
@@ -102,32 +217,36 @@ class OnboardingScreen extends StatefulWidget {
 
 class _OnboardingScreenState extends State<OnboardingScreen> {
   final PageController _pageController = PageController();
-
   int currentPage = 0;
 
-  final List<OnboardingData> pages = [
+  final List<OnboardingData> pages = const [
     OnboardingData(
-      image: 'assets/images/splash_palm.png',
-      title: "Welcome to\nSa'af",
+      image: 'assets/images/onboarding_1.jpg',
+      title: "Welcome to Sa'af",
       description:
-          "Your smart companion for monitoring\nand caring for your date palm trees.",
+          'Your smart companion for monitoring and caring for your date palm trees.',
+      kind: OnboardingKind.welcome,
     ),
     OnboardingData(
-      image: 'assets/images/onboarding_ai.png',
-      title: "AI Disease\nClassification",
+      image: 'assets/images/onboarding_2.jpg',
+      title: 'AI Disease\nClassification',
       description:
-          "Use AI to analyze palm leaf images and\nidentify whether your palm is healthy or\naffected by one of the supported diseases.",
+          'Snap a photo of a palm leaf and know instantly if it is healthy or diseased.',
+      kind: OnboardingKind.detect,
     ),
     OnboardingData(
-      image: 'assets/images/onboarding_track.png',
-      title: "Track Your Palm\nHealth",
+      image: 'assets/images/onboarding_3.png',
+      title: 'Track Your\nPalm Health',
       description:
-          "Keep track of your previous scans,\nmonitor the health of your palms over\ntime, and follow changes in your results.",
+          'Review previous scans and follow how your palms improve over time.',
+      kind: OnboardingKind.track,
     ),
   ];
 
+  bool get _isLast => currentPage == pages.length - 1;
+
   void nextPage() {
-    if (currentPage < pages.length - 1) {
+    if (!_isLast) {
       _pageController.nextPage(
         duration: const Duration(milliseconds: 400),
         curve: Curves.easeInOut,
@@ -140,9 +259,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   void goToLogin() {
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(
-        builder: (context) => const LoginScreen(),
-      ),
+      MaterialPageRoute(builder: (context) => const LoginScreen()),
     );
   }
 
@@ -155,174 +272,479 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: onboardingBackground,
-      body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(
-                left: 16,
-                right: 16,
-                top: 8,
-              ),
+      backgroundColor: AppColors.primary,
+      body: Stack(
+        children: [
+          // Pages (photo + texts)
+          PageView.builder(
+            controller: _pageController,
+            itemCount: pages.length,
+            onPageChanged: (i) => setState(() => currentPage = i),
+            itemBuilder: (context, i) =>
+                _OnboardingPage(data: pages[i], index: i, count: pages.length),
+          ),
+
+          // Top bar: logo + Skip
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
               child: Row(
-                children: List.generate(
-                  pages.length,
-                  (index) {
-                    return Expanded(
+                children: [
+                                    SizedBox(
+                    width: 44,
+                    height: 44,
+                    child: Transform.scale(
+                      scale: 1.6,
+                      child: Image.asset('assets/images/logo_light.png'),
+                    ),
+                  ),
+                  const Spacer(),
+                  if (!_isLast)
+                    GestureDetector(
+                      onTap: goToLogin,
                       child: Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 3),
-                        height: 3,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
                         decoration: BoxDecoration(
-                          color: index == currentPage
-                              ? buttonGreen
-                              : const Color(0xFFDDEBE0),
-                          borderRadius: BorderRadius.circular(10),
+                          color: Colors.white.withValues(alpha: 0.22),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Text(
+                          'Skip',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ),
-                    );
-                  },
+                    ),
+                ],
+              ),
+            ),
+          ),
+
+          // Bottom button
+          Positioned(
+            left: 20,
+            right: 20,
+            bottom: 0,
+            child: SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 24),
+                child: SizedBox(
+                  height: 54,
+                  child: ElevatedButton(
+                    onPressed: nextPage,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.lime,
+                      foregroundColor: AppColors.primary,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(27),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          _isLast ? 'Get Started' : 'Next',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        const Icon(Icons.arrow_forward, size: 20),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ),
-            Expanded(
-              child: PageView.builder(
-                controller: _pageController,
-                itemCount: pages.length,
-                onPageChanged: (index) {
-                  setState(() {
-                    currentPage = index;
-                  });
-                },
-                itemBuilder: (context, index) {
-                  final page = pages[index];
-
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: Column(
-                      children: [
-                        const SizedBox(height: 20),
-                        Expanded(
-                          flex: 6,
-                          child: Center(
-                            child: Image.asset(
-                              page.image,
-                              width: index == 0 ? 330 : 310,
-                              height: index == 0 ? 330 : 310,
-                              fit: BoxFit.contain,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        Text(
-                          page.title,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontSize: 29,
-                            fontWeight: FontWeight.w700,
-                            color: textGreen,
-                            height: 1.2,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          page.description,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontSize: 15,
-                            color: Color(0xFF68776E),
-                            height: 1.5,
-                          ),
-                        ),
-                        const Spacer(),
-                        Padding(
-                          padding: const EdgeInsets.only(
-                            bottom: 20,
-                            left: 8,
-                            right: 8,
-                          ),
-                          child: Row(
-                            mainAxisAlignment:
-                                MainAxisAlignment.spaceBetween,
-                            children: [
-                              GestureDetector(
-                                onTap: goToLogin,
-                                child: const Padding(
-                                  padding: EdgeInsets.all(8),
-                                  child: Text(
-                                    "SKIP",
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w500,
-                                      color: Color(0xFF68776E),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              GestureDetector(
-                                onTap: nextPage,
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 24,
-                                    vertical: 13,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: buttonGreen,
-                                    borderRadius: BorderRadius.circular(30),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withValues(
-                                          alpha: 0.12,
-                                        ),
-                                        blurRadius: 8,
-                                        offset: const Offset(0, 4),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Text(
-                                    currentPage == pages.length - 1
-                                        ? "GET STARTED"
-                                        : "NEXT",
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 }
 
 // ============================================================
+// ONBOARDING PAGE
+// ============================================================
+
+class _OnboardingPage extends StatelessWidget {
+  const _OnboardingPage({
+    required this.data,
+    required this.index,
+    required this.count,
+  });
+
+  final OnboardingData data;
+  final int index;
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Image.asset(data.image, fit: BoxFit.cover),
+
+        // Dark green fade at the bottom so the text is readable
+        Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Colors.black.withValues(alpha: 0.05),
+                const Color(0xFF173F2C).withValues(alpha: 0.35),
+                const Color(0xFF0F2A1D).withValues(alpha: 0.92),
+                const Color(0xFF0F2A1D),
+              ],
+              stops: const [0.0, 0.45, 0.72, 1.0],
+            ),
+          ),
+        ),
+
+        SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 70, 20, 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Middle illustration (page 2 and 3 only)
+                Expanded(
+                  child: Center(
+                    child: switch (data.kind) {
+                      OnboardingKind.welcome => const SizedBox(),
+                      OnboardingKind.detect => const _DetectIllustration(),
+                      OnboardingKind.track => const _TrackIllustration(),
+                    },
+                  ),
+                ),
+
+                // Page indicator
+                Row(
+                  children: List.generate(count, (i) {
+                    final active = i == index;
+                    return Container(
+                      margin: const EdgeInsets.only(right: 5),
+                      width: active ? 22 : 6,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        color: active
+                            ? AppColors.lime
+                            : Colors.white.withValues(alpha: 0.45),
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                    );
+                  }),
+                ),
+                const SizedBox(height: 18),
+
+                Text(
+                  data.title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 30,
+                    height: 1.15,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.3,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  data.description,
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.85),
+                    fontSize: 14,
+                    height: 1.45,
+                  ),
+                ),
+
+                // Space for the button
+                const SizedBox(height: 122),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// Page 2: scan frame + "Black Scorch detected" card
+class _DetectIllustration extends StatelessWidget {
+  const _DetectIllustration();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        CustomPaint(
+          size: const Size(180, 180),
+          painter: _ScanFramePainter(),
+        ),
+        const SizedBox(height: 18),
+        Container(
+          width: 280,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.16),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: AppColors.lime,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.auto_awesome,
+                    color: AppColors.primary, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Black Scorch detected',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(3),
+                            child: LinearProgressIndicator(
+                              value: 0.98,
+                              minHeight: 4,
+                              backgroundColor:
+                                  Colors.white.withValues(alpha: 0.25),
+                              valueColor: const AlwaysStoppedAnimation(
+                                  AppColors.lime),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        const Text(
+                          '98%',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// Lime corner brackets of the scan frame
+class _ScanFramePainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final p = Paint()
+      ..color = AppColors.lime
+      ..strokeWidth = 3
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+    const l = 34.0; // corner length
+    final w = size.width, h = size.height;
+    // top-left
+    canvas.drawLine(const Offset(0, l), Offset.zero, p);
+    canvas.drawLine(Offset.zero, const Offset(l, 0), p);
+    // top-right
+    canvas.drawLine(Offset(w - l, 0), Offset(w, 0), p);
+    canvas.drawLine(Offset(w, 0), Offset(w, l), p);
+    // bottom-left
+    canvas.drawLine(Offset(0, h - l), Offset(0, h), p);
+    canvas.drawLine(Offset(0, h), Offset(l, h), p);
+    // bottom-right
+    canvas.drawLine(Offset(w - l, h), Offset(w, h), p);
+    canvas.drawLine(Offset(w, h), Offset(w, h - l), p);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+// Page 3: "Scan history" glass card with a chart and 3 rows
+class _TrackIllustration extends StatelessWidget {
+  const _TrackIllustration();
+
+  Widget _row(String label, Color dot) {
+    return Container(
+      margin: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(color: dot, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          const Icon(Icons.chevron_right, color: Colors.white70, size: 18),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 290,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Text(
+                'Scan history',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                'This month',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.75),
+                  fontSize: 10,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          CustomPaint(
+            size: const Size(double.infinity, 80),
+            painter: _ChartPainter(),
+          ),
+          const SizedBox(height: 4),
+          _row('Healthy', AppColors.lime),
+          _row('Black Scorch', AppColors.diseased),
+          _row('Leaf Spots', const Color(0xFFF2C14E)),
+        ],
+      ),
+    );
+  }
+}
+
+// Simple rising line chart
+class _ChartPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    const pts = [0.85, 0.65, 0.78, 0.55, 0.62, 0.38, 0.30, 0.05];
+    final path = Path();
+    for (var i = 0; i < pts.length; i++) {
+      final x = size.width * i / (pts.length - 1);
+      final y = size.height * pts[i];
+      i == 0 ? path.moveTo(x, y) : path.lineTo(x, y);
+    }
+
+    // Soft fill under the line
+    final fill = Path.from(path)
+      ..lineTo(size.width, size.height)
+      ..lineTo(0, size.height)
+      ..close();
+    canvas.drawPath(
+      fill,
+      Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            AppColors.lime.withValues(alpha: 0.35),
+            AppColors.lime.withValues(alpha: 0.0),
+          ],
+        ).createShader(Offset.zero & size),
+    );
+
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = AppColors.lime
+        ..strokeWidth = 2.5
+        ..style = PaintingStyle.stroke
+        ..strokeJoin = StrokeJoin.round,
+    );
+
+    // End dot
+    canvas.drawCircle(
+      Offset(size.width, size.height * pts.last),
+      4,
+      Paint()..color = AppColors.lime,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+// ============================================================
 // ONBOARDING DATA
 // ============================================================
+
+enum OnboardingKind { welcome, detect, track }
 
 class OnboardingData {
   final String image;
   final String title;
   final String description;
+  final OnboardingKind kind;
 
-  OnboardingData({
+  const OnboardingData({
     required this.image,
     required this.title,
     required this.description,
+    required this.kind,
   });
 }
-
 // ============================================================
 // LOGIN
 // ============================================================
