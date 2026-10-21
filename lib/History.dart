@@ -2,14 +2,14 @@ import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-
 import 'chatbot.dart';
+import 'home_page.dart';
+import 'settings/settings_page.dart';
 import 'scan_page.dart';
 import 'theme/app_colors.dart';
 import 'widgets/app_bottom_nav.dart';
 
-/// Color of the "Diseased" filter chip. It has no equivalent in the shared theme.
-const Color _diseasedChip = Color(0xFFD9A073);
+
 
 // ============================================================
 // MODEL: one scan record
@@ -315,6 +315,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
+  void _openDetails(ScanRecord r) {
+    Navigator.push(
+      context,
+      MaterialPageRoute<void>(builder: (_) => ScanDetailsScreen(record: r)),
+    );
+  }
+
   /// Applies the status filter and the search text.
   List<ScanRecord> _apply(List<ScanRecord> all) {
     final q = _query.trim().toLowerCase();
@@ -331,243 +338,164 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   /// Confirmation dialog, then deletes the scan from Firestore.
   Future<void> _delete(ScanRecord r) async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => Dialog(
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 52,
-                height: 52,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFF6DFCB),
-                  shape: BoxShape.circle,
-                ),
-                child:
-                    const Icon(Icons.delete_outline, color: AppColors.orange),
-              ),
-              const SizedBox(height: 16),
-              const Text('Delete this scan ?',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
-              const SizedBox(height: 8),
-              Text(
-                "${r.title} - ${formatScanDate(r.date)} will be removed from your history. This can't be undone.",
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                    fontSize: 11, color: AppColors.mutedText, height: 1.4),
-              ),
-              const SizedBox(height: 20),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.pop(ctx, false),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.textDark,
-                        side: const BorderSide(color: AppColors.textDark),
-                      ),
-                      child: const Text('Cancel'),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: FilledButton(
-                      onPressed: () => Navigator.pop(ctx, true),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.orange,
-                        foregroundColor: Colors.white,
-                      ),
-                      child: const Text('Delete'),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
+    final ok = await showConfirmDialog(
+      context,
+      icon: Icons.delete_outline_rounded,
+      title: 'Delete this scan?',
+      message:
+          "${r.title} · ${formatScanDate(r.date)} will be removed. This can't be undone.",
+      confirmLabel: 'Delete',
+      danger: true,
     );
-    if (ok == true) await _repo.deleteScan(r.id);
+    if (ok) await _repo.deleteScan(r.id);
   }
 
-  Widget _header(int count) {
+  // ---------- Header ----------
+  Widget _header(List<ScanRecord> all) {
+    final count = all.length;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
-      child: Stack(
-        alignment: Alignment.center,
+      padding: const EdgeInsets.fromLTRB(22, 16, 22, 8),
+      child: Row(
         children: [
-          const Align(
-            alignment: Alignment.centerLeft,
-            child:
-                Icon(Icons.notifications, size: 18, color: AppColors.textDark),
-          ),
-          Column(
-            children: [
-              const Text('History',
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'History',
                   style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textDark)),
-              const SizedBox(height: 2),
-              Text('$count scan saved',
+                    fontSize: 30,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.primary,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '$count ${count == 1 ? 'scan' : 'scans'} saved',
                   style: const TextStyle(
-                      fontSize: 10, color: AppColors.mutedText)),
-            ],
+                    fontSize: 14,
+                    color: AppColors.mutedText,
+                  ),
+                ),
+              ],
+            ),
           ),
+          if (all.isNotEmpty)
+            Material(
+              color: Colors.white,
+              shape: const CircleBorder(),
+              elevation: 0,
+              child: InkWell(
+                customBorder: const CircleBorder(),
+                onTap: () => _showStats(all),
+                child: Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppColors.inputBorder),
+                  ),
+                  child: const Icon(Icons.bar_chart_rounded,
+                      color: AppColors.primary, size: 22),
+                ),
+              ),
+            ),
         ],
       ),
     );
   }
 
+  // ---------- Search ----------
   Widget _searchField() {
+    final border = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(28),
+      borderSide: const BorderSide(color: AppColors.inputBorder),
+    );
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+      padding: const EdgeInsets.fromLTRB(22, 10, 22, 6),
       child: TextField(
         controller: _search,
         onChanged: (v) => setState(() => _query = v),
-        style: const TextStyle(fontSize: 13),
+        style: const TextStyle(fontSize: 14, color: AppColors.primary),
         decoration: InputDecoration(
-          hintText: 'Search by diseases name',
-          hintStyle: const TextStyle(fontSize: 12, color: AppColors.mutedText),
-          prefixIcon:
-              const Icon(Icons.search, size: 18, color: AppColors.mutedText),
-          filled: true,
-          fillColor: AppColors.card,
-          isDense: true,
-          contentPadding: const EdgeInsets.symmetric(vertical: 12),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-            borderSide: const BorderSide(color: AppColors.line),
+          hintText: 'Search by disease name',
+          hintStyle: const TextStyle(fontSize: 14, color: AppColors.mutedText),
+          prefixIcon: const Padding(
+            padding: EdgeInsets.only(left: 16, right: 8),
+            child: Icon(Icons.search_rounded,
+                size: 22, color: AppColors.mutedText),
           ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-            borderSide: const BorderSide(color: AppColors.forest),
+          prefixIconConstraints: const BoxConstraints(minWidth: 46),
+          suffixIcon: _query.isEmpty
+              ? null
+              : IconButton(
+                  icon: const Icon(Icons.close_rounded,
+                      size: 18, color: AppColors.mutedText),
+                  onPressed: () {
+                    _search.clear();
+                    setState(() => _query = '');
+                  },
+                ),
+          filled: true,
+          fillColor: Colors.white,
+          contentPadding: const EdgeInsets.symmetric(vertical: 16),
+          enabledBorder: border,
+          border: border,
+          focusedBorder: border.copyWith(
+            borderSide: const BorderSide(color: AppColors.primary, width: 1.4),
           ),
         ),
       ),
     );
   }
 
-  Widget _chip(String label, _Filter f, Color selectedColor) {
+  // ---------- Filter chips ----------
+  Widget _chip(String label, _Filter f, int count) {
     final selected = _filter == f;
     return Padding(
-      padding: const EdgeInsets.only(right: 8),
+      padding: const EdgeInsets.only(right: 10),
       child: GestureDetector(
         onTap: () => setState(() => _filter = f),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 7),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.fromLTRB(18, 9, 9, 9),
           decoration: BoxDecoration(
-            color: selected ? selectedColor : AppColors.card,
-            borderRadius: BorderRadius.circular(20),
-            border:
-                Border.all(color: selected ? selectedColor : AppColors.line),
-          ),
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 11,
-              color: selected ? Colors.white : AppColors.mutedText,
+            color: selected ? AppColors.primary : Colors.white,
+            borderRadius: BorderRadius.circular(30),
+            border: Border.all(
+              color: selected ? AppColors.primary : AppColors.inputBorder,
             ),
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _chips() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
-      child: Row(
-        children: [
-          _chip('All', _Filter.all, AppColors.forest),
-          _chip('Healthy', _Filter.healthy, AppColors.leafGreen),
-          _chip('Diseased', _Filter.diseased, _diseasedChip),
-        ],
-      ),
-    );
-  }
-
-  Widget _card(ScanRecord r) {
-    final color = r.isHealthy ? AppColors.leafGreen : AppColors.orange;
-    return Material(
-      color: AppColors.card,
-      borderRadius: BorderRadius.circular(12),
-      elevation: 1.5,
-      shadowColor: const Color(0x22000000),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute<void>(
-              builder: (_) => ScanDetailsScreen(record: r)),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(9),
           child: Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              ScanImage(
-                  url: r.imageUrl,
-                  isHealthy: r.isHealthy,
-                  width: 53,
-                  height: 53,
-                  radius: 8),
-              const SizedBox(width: 11),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Flexible(
-                          child: Text(
-                            r.title,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                                fontSize: 11, fontWeight: FontWeight.w700),
-                          ),
-                        ),
-                        const SizedBox(width: 7),
-                        ScanStatusTag(isHealthy: r.isHealthy),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(formatScanDate(r.date),
-                        style: const TextStyle(
-                            fontSize: 9, color: AppColors.mutedText)),
-                    const SizedBox(height: 6),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(4),
-                            child: LinearProgressIndicator(
-                              value: r.confidence / 100,
-                              minHeight: 4,
-                              backgroundColor: AppColors.line,
-                              valueColor: AlwaysStoppedAnimation<Color>(color),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Text('${r.confidence.round()}%',
-                            style: const TextStyle(
-                                fontSize: 9, fontWeight: FontWeight.w700)),
-                      ],
-                    ),
-                  ],
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: selected ? Colors.white : AppColors.primary,
                 ),
               ),
-              IconButton(
-                onPressed: () => _delete(r),
-                visualDensity: VisualDensity.compact,
-                icon: const Icon(Icons.delete_outline,
-                    size: 18, color: AppColors.mutedText),
+              const SizedBox(width: 8),
+              Container(
+                constraints: const BoxConstraints(minWidth: 26),
+                height: 24,
+                padding: const EdgeInsets.symmetric(horizontal: 7),
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: selected ? AppColors.lime : AppColors.pageBg,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '$count',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    color: selected ? AppColors.primary : AppColors.mutedText,
+                  ),
+                ),
               ),
             ],
           ),
@@ -576,44 +504,116 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
-  // Shown when the user has no scans yet.
+  Widget _chips(List<ScanRecord> all) {
+    final healthy = all.where((r) => r.isHealthy).length;
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.fromLTRB(22, 8, 12, 8),
+      child: Row(
+        children: [
+          _chip('All', _Filter.all, all.length),
+          _chip('Healthy', _Filter.healthy, healthy),
+          _chip('Diseased', _Filter.diseased, all.length - healthy),
+        ],
+      ),
+    );
+  }
+
+  // ---------- Delete button inside the card ----------
+  Widget _deleteButton(ScanRecord r) {
+    return Material(
+      color: AppColors.pageBg,
+      shape: const CircleBorder(),
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: () => _delete(r),
+        child: const SizedBox(
+          width: 32,
+          height: 32,
+          child: Icon(Icons.delete_outline_rounded,
+              size: 18, color: AppColors.mutedText),
+        ),
+      ),
+    );
+  }
+
+  // ---------- Empty state ----------
   Widget _emptyState() {
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 36),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 84,
-              height: 84,
-              decoration: const BoxDecoration(
-                color: Color(0xFFE3E6E1),
+              width: 170,
+              height: 170,
+              decoration: BoxDecoration(
+                color: Colors.white,
                 shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.lime.withValues(alpha: 0.35),
+                    blurRadius: 40,
+                    spreadRadius: 6,
+                  ),
+                ],
               ),
-              child: const Icon(Icons.history,
-                  size: 40, color: AppColors.forest),
+              alignment: Alignment.center,
+              child: Container(
+                width: 110,
+                height: 110,
+                decoration: const BoxDecoration(
+                  color: AppColors.softGreen,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.history_rounded,
+                    size: 52, color: AppColors.primary),
+              ),
             ),
-            const SizedBox(height: 16),
-            const Text('No scans yet',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-            const SizedBox(height: 8),
+            const SizedBox(height: 32),
+            const Text(
+              'No scans yet',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.w800,
+                color: AppColors.primary,
+              ),
+            ),
+            const SizedBox(height: 10),
             const Text(
               'Scan your first date palm and its\ndiagnosis will show up here.',
               textAlign: TextAlign.center,
               style: TextStyle(
-                  fontSize: 11, color: AppColors.mutedText, height: 1.4),
+                fontSize: 15,
+                color: AppColors.mutedText,
+                height: 1.5,
+              ),
             ),
-            const SizedBox(height: 24),
-            FilledButton.icon(
-              onPressed: _openScan,
-              icon: const Icon(Icons.crop_free, size: 18),
-              label: const Text('Start Scan'),
-              style: FilledButton.styleFrom(
-                backgroundColor: AppColors.forest,
-                foregroundColor: Colors.white,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
+            const SizedBox(height: 30),
+            SizedBox(
+              height: 56,
+              child: FilledButton(
+                onPressed: _openScan,
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  shape: const StadiumBorder(),
+                  padding: const EdgeInsets.symmetric(horizontal: 30),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.center_focus_strong_rounded,
+                        color: AppColors.lime, size: 22),
+                    SizedBox(width: 10),
+                    Text(
+                      'Start scan',
+                      style: TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.w700),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
@@ -622,6 +622,156 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
+  // ---------- Stats sheet (chart button) ----------
+  void _showStats(List<ScanRecord> all) {
+    final healthy = all.where((r) => r.isHealthy).length;
+    final diseased = all.length - healthy;
+
+    // Count each disease name.
+    final byDisease = <String, int>{};
+    for (final r in all.where((r) => !r.isHealthy)) {
+      byDisease[r.title] = (byDisease[r.title] ?? 0) + 1;
+    }
+    final entries = byDisease.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.white,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(22, 12, 22, 22),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 44,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: AppColors.inputBorder,
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                const Text(
+                  'Scan summary',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.primary,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    _statTile('Total', all.length, AppColors.primary),
+                    const SizedBox(width: 10),
+                    _statTile('Healthy', healthy, AppColors.healthyGreen),
+                    const SizedBox(width: 10),
+                    _statTile('Diseased', diseased, AppColors.diseased),
+                  ],
+                ),
+                if (entries.isNotEmpty) ...[
+                  const SizedBox(height: 22),
+                  const Text(
+                    'BY DISEASE',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.mutedText,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  for (final e in entries)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  e.key,
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.primary,
+                                  ),
+                                ),
+                              ),
+                              Text(
+                                '${e.value}',
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(4),
+                            child: LinearProgressIndicator(
+                              value: e.value / diseased,
+                              minHeight: 6,
+                              backgroundColor: AppColors.pageBg,
+                              valueColor: const AlwaysStoppedAnimation<Color>(
+                                  AppColors.diseased),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _statTile(String label, int value, Color color) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        decoration: BoxDecoration(
+          color: AppColors.pageBg,
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Column(
+          children: [
+            Text(
+              '$value',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.w800,
+                color: color,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: const TextStyle(fontSize: 12, color: AppColors.mutedText),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ---------- Build ----------
   @override
   Widget build(BuildContext context) {
     final keyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
@@ -629,8 +779,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
     return Directionality(
       textDirection: TextDirection.ltr,
       child: Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: AppColors.pageBg,
         body: SafeArea(
+          bottom: false,
           child: StreamBuilder<List<ScanRecord>>(
             stream: _stream,
             builder: (context, snap) {
@@ -644,30 +795,44 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 );
               }
               if (!snap.hasData) {
-                return const Center(child: CircularProgressIndicator());
+                return const Center(
+                  child: CircularProgressIndicator(color: AppColors.primary),
+                );
               }
               final all = snap.data!;
               final shown = _apply(all);
               return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _header(all.length),
+                  _header(all),
                   if (all.isEmpty)
                     Expanded(child: _emptyState())
                   else ...[
                     _searchField(),
-                    _chips(),
+                    _chips(all),
                     Expanded(
                       child: shown.isEmpty
                           ? const Center(
-                              child: Text('No results',
-                                  style: TextStyle(color: AppColors.mutedText)))
+                              child: Text(
+                                'No results',
+                                style: TextStyle(
+                                    fontSize: 15, color: AppColors.mutedText),
+                              ),
+                            )
                           : ListView.separated(
                               padding:
-                                  const EdgeInsets.fromLTRB(20, 4, 20, 20),
+                                  const EdgeInsets.fromLTRB(22, 6, 22, 24),
                               itemCount: shown.length,
                               separatorBuilder: (_, __) =>
                                   const SizedBox(height: 12),
-                              itemBuilder: (_, i) => _card(shown[i]),
+                              itemBuilder: (_, i) {
+                                final r = shown[i];
+                                return RecentScanCard(
+                                  record: r,
+                                  onTap: () => _openDetails(r),
+                                  trailing: _deleteButton(r),
+                                );
+                              },
                             ),
                     ),
                   ],
@@ -676,8 +841,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
             },
           ),
         ),
-        // The nav bar is hidden while the keyboard is open (e.g. when typing
-        // in the search field) so it does not take space.
+        // The nav bar is hidden while the keyboard is open.
         bottomNavigationBar: keyboardOpen
             ? null
             : const AppBottomNavigationBar(current: NavTab.history),
@@ -685,7 +849,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 }
-
 // ============================================================
 // SCREEN 2: SCAN DETAILS
 // ============================================================
