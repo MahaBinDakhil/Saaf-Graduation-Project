@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart'; 
 import 'package:flutter/gestures.dart';
 import 'package:firebase_core/firebase_core.dart';
-
+import 'package:google_fonts/google_fonts.dart';
 import 'create_account.dart';
 import 'forgot_password.dart';
 import 'services/auth_service.dart';
@@ -26,9 +26,11 @@ class SaafApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: "Sa'af",
-      theme: ThemeData(
-        useMaterial3: true,
-      ),
+               theme: ThemeData(
+           useMaterial3: true,
+           fontFamily: GoogleFonts.inter().fontFamily,
+           scaffoldBackgroundColor: const Color(0xFFF3F5F0),
+         ),
       home: const SplashScreen(),
     );
   }

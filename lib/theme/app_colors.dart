@@ -16,4 +16,16 @@ class AppColors {
   static const Color mutedText = Color(0xFF777A78);
   static const Color line = Color(0xFFE1E2E1);
   static const Color navInactive = Color(0xFF999C99);
+
+    // ===== New design (redesign) =====
+  static const Color primary = Color(0xFF173F2C);      // dark green buttons
+  static const Color lime = Color(0xFFB9E66C);         // Next / active tab
+  static const Color pageBg = Color(0xFFF3F5F0);       // light page background
+  static const Color diseased = Color(0xFFD2642F);     // Diseased tag / bars
+  static const Color danger = Color(0xFFC23A2B);       // Delete button
+  static const Color healthyGreen = Color(0xFF3E8E5A); // Healthy tag / bars
+  static const Color softGreen = Color(0xFFE3EFDD);    // light green boxes
+  static const Color inputBorder = Color(0xFFE3E6E0);  // text field border
 }
+
+
