@@ -3,7 +3,6 @@ import 'package:flutter/gestures.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'create_account.dart';
-import 'forgot_password.dart';
 import 'services/auth_service.dart';
 import 'firebase_options.dart';
 import 'home_page.dart';
@@ -808,6 +807,94 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+    // Bottom sheet: enter email, send reset link, show "Check your inbox".
+  void _openForgotPassword() {
+    final resetEmail = TextEditingController(text: emailController.text.trim());
+    var sending = false;
+
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      backgroundColor: AppColors.pageBg,
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (sheetContext, setSheet) {
+            Future<void> send() async {
+              final email = resetEmail.text.trim();
+              if (email.isEmpty) {
+                _showError('Please enter your email.');
+                return;
+              }
+              setSheet(() => sending = true);
+              try {
+                await AuthService().sendPasswordResetEmail(email: email);
+                if (!sheetContext.mounted) return;
+                Navigator.pop(sheetContext);
+                if (!mounted) return;
+                showTopBanner(
+                  context,
+                  'Check your inbox',
+                  'Reset link sent if the email is registered.',
+                );
+              } catch (e) {
+                if (!mounted) return;
+                _showError(AuthService.errorMessage(e));
+                setSheet(() => sending = false);
+              }
+            }
+
+            return Padding(
+              // Moves the sheet up above the keyboard.
+              padding: EdgeInsets.only(
+                left: 20,
+                right: 20,
+                bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 24,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Forgot password?',
+                    style: TextStyle(
+                      color: AppColors.textDark,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  const Text(
+                    "Enter your email and we'll send you a link to reset your password.",
+                    style: TextStyle(
+                      color: AppColors.mutedText,
+                      fontSize: 14,
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  const AuthLabel('Email'),
+                  AuthTextField(
+                    controller: resetEmail,
+                    hint: 'name@example.com',
+                    icon: Icons.mail_outline,
+                    keyboardType: TextInputType.emailAddress,
+                  ),
+                  const SizedBox(height: 20),
+                  PrimaryButton(
+                    label: 'Send reset link',
+                    loading: sending,
+                    onPressed: send,
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   Future<void> handleGuest() async {
     setState(() => isGuestLoading = true);
     try {
@@ -860,14 +947,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   Align(
                     alignment: Alignment.centerRight,
                     child: GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const ForgotPasswordScreen(),
-                          ),
-                        );
-                      },
+                                            onTap: _openForgotPassword,
                       child: const Text(
                         'Forgot password?',
                         style: TextStyle(
