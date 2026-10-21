@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'chatbot.dart';
 import 'home_page.dart';
 import 'settings/settings_page.dart';
+import 'settings/settings_widgets.dart';
 import 'scan_page.dart';
 import 'theme/app_colors.dart';
 import 'widgets/app_bottom_nav.dart';
@@ -866,48 +867,147 @@ void _openChatbotFor(BuildContext context, ScanRecord r) {
   );
 }
 
-class _TopBar extends StatelessWidget {
-  const _TopBar({required this.title});
-  final String title;
+/// Big rounded photo. Tap it to open the full-screen viewer.
+class _PhotoBox extends StatelessWidget {
+  const _PhotoBox({
+    required this.url,
+    required this.isHealthy,
+    this.badge,
+  });
+
+  final String? url;
+  final bool isHealthy;
+  final String? badge; // e.g. "Scanned photo"
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
-      child: SizedBox(
-        height: 44,
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            Align(
-              alignment: Alignment.centerLeft,
-              child: InkWell(
-                onTap: () => Navigator.maybePop(context),
-                customBorder: const CircleBorder(),
-                child: Container(
-                  width: 36,
-                  height: 36,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFEDEDED),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.chevron_left, size: 20),
+    return GestureDetector(
+      onTap: () {
+        final u = url;
+        if (u == null) return;
+        Navigator.of(context).push(
+          MaterialPageRoute<void>(builder: (_) => FullImageViewer(url: u)),
+        );
+      },
+      child: Stack(
+        children: [
+          ScanImage(
+            url: url,
+            isHealthy: isHealthy,
+            width: double.infinity,
+            height: 240,
+            radius: 28,
+          ),
+          if (badge != null)
+            Positioned(
+              left: 16,
+              top: 16,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.75),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 9,
+                      height: 9,
+                      decoration: const BoxDecoration(
+                        color: AppColors.lime,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      badge!,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
-            Text(title,
-                style:
-                    const TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
-          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Dark green full-width pill button.
+class _DarkPillButton extends StatelessWidget {
+  const _DarkPillButton({required this.label, required this.onPressed});
+  final String label;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      height: 58,
+      child: FilledButton(
+        onPressed: onPressed,
+        style: FilledButton.styleFrom(
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          shape: const StadiumBorder(),
+        ),
+        child: Text(
+          label,
+          style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
         ),
       ),
     );
   }
 }
 
-const List<BoxShadow> _cardShadow = [
-  BoxShadow(color: Color(0x14000000), blurRadius: 8, offset: Offset(0, 3)),
-];
+/// White pill button with a dark green border and a chat icon.
+class _ChatPillButton extends StatelessWidget {
+  const _ChatPillButton({required this.label, required this.onPressed});
+  final String label;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      height: 58,
+      child: OutlinedButton.icon(
+        onPressed: onPressed,
+        icon: const Icon(Icons.chat_bubble_outline_rounded, size: 22),
+        label: Text(
+          label,
+          style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+        ),
+        style: OutlinedButton.styleFrom(
+          backgroundColor: Colors.white,
+          foregroundColor: AppColors.primary,
+          side: const BorderSide(color: AppColors.primary, width: 1.6),
+          shape: const StadiumBorder(),
+        ),
+      ),
+    );
+  }
+}
+
+/// White rounded card used on both screens.
+BoxDecoration _whiteCard() => BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(26),
+      border: Border.all(color: const Color(0xFFEDEFEA)),
+      boxShadow: const [
+        BoxShadow(
+          color: Color(0x0D000000),
+          blurRadius: 12,
+          offset: Offset(0, 4),
+        ),
+      ],
+    );
 
 class ScanDetailsScreen extends StatelessWidget {
   const ScanDetailsScreen({super.key, required this.record});
@@ -916,173 +1016,136 @@ class ScanDetailsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final r = record;
-    final color = r.isHealthy ? AppColors.leafGreen : AppColors.orange;
+    final percent = r.confidence.round().clamp(0, 100);
+
     return Directionality(
       textDirection: TextDirection.ltr,
       child: Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: AppColors.pageBg,
         body: SafeArea(
+          bottom: false,
           child: Column(
             children: [
-              const _TopBar(title: 'Scan Details'),
+              const SubPageHeader(title: 'Scan Details'),
               Expanded(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+                  padding: const EdgeInsets.fromLTRB(22, 10, 22, 24),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                                            GestureDetector(
-                        onTap: () {
-                          final url = r.imageUrl;
-                          if (url == null) return;
-                          Navigator.of(context).push(
-                            MaterialPageRoute<void>(
-                              builder: (_) => FullImageViewer(url: url),
-                            ),
-                          );
-                        },
-                        child: Stack(
-                          children: [
-                            ScanImage(
-                              url: r.imageUrl,
-                              isHealthy: r.isHealthy,
-                              width: double.infinity,
-                              height: 170,
-                              radius: 14,
-                            ),
-                            Positioned(
-                              right: 8,
-                              bottom: 8,
-                              child: Container(
-                                padding: const EdgeInsets.all(5),
-                                decoration: BoxDecoration(
-                                  color: Colors.black45,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: const Icon(Icons.zoom_out_map,
-                                    color: Colors.white, size: 16),
-                              ),
-                            ),
-                          ],
-                        ),
+                      _PhotoBox(
+                        url: r.imageUrl,
+                        isHealthy: r.isHealthy,
+                        badge: 'Scanned photo',
                       ),
-                      const SizedBox(height: 14),
+                      const SizedBox(height: 16),
+
+                      // Result card
                       Container(
                         width: double.infinity,
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: AppColors.card,
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: _cardShadow,
-                        ),
+                        padding: const EdgeInsets.fromLTRB(20, 20, 20, 22),
+                        decoration: _whiteCard(),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Expanded(
-                                  child: Text(r.title,
-                                      style: const TextStyle(
-                                          fontSize: 15,
-                                          fontWeight: FontWeight.w600)),
+                                  child: Text(
+                                    r.title,
+                                    style: const TextStyle(
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.w800,
+                                      color: AppColors.textDark,
+                                    ),
+                                  ),
                                 ),
-                                ScanStatusTag(isHealthy: r.isHealthy),
+                                const SizedBox(width: 10),
+                                StatusPill(isHealthy: r.isHealthy),
                               ],
                             ),
                             const SizedBox(height: 8),
                             Row(
                               children: [
-                                const Icon(Icons.schedule,
-                                    size: 12, color: AppColors.mutedText),
+                                const Icon(Icons.schedule_rounded,
+                                    size: 16, color: AppColors.mutedText),
                                 const SizedBox(width: 6),
-                                Text(formatScanDateFull(r.date),
-                                    style: const TextStyle(
-                                        fontSize: 10,
-                                        color: AppColors.mutedText)),
+                                Text(
+                                  formatScanDateFull(r.date),
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    color: AppColors.mutedText,
+                                  ),
+                                ),
                               ],
                             ),
-                            const SizedBox(height: 10),
+                            const SizedBox(height: 18),
                             Row(
                               children: [
-                                const Text('Confidence',
+                                const Expanded(
+                                  child: Text(
+                                    'Confidence',
                                     style: TextStyle(
-                                        fontSize: 10,
-                                        color: AppColors.mutedText)),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(4),
-                                    child: LinearProgressIndicator(
-                                      value: r.confidence / 100,
-                                      minHeight: 4,
-                                      backgroundColor: AppColors.line,
-                                      valueColor:
-                                          AlwaysStoppedAnimation<Color>(color),
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.mutedText,
                                     ),
                                   ),
                                 ),
-                                const SizedBox(width: 10),
-                                Text('${r.confidence.round()}%',
-                                    style: const TextStyle(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w700)),
+                                Text(
+                                  '$percent%',
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w800,
+                                    color: AppColors.textDark,
+                                  ),
+                                ),
                               ],
                             ),
+                            const SizedBox(height: 10),
+                            ConfidenceBar(
+                                percent: percent, isHealthy: r.isHealthy),
                           ],
                         ),
                       ),
-                      const SizedBox(height: 18),
-                      const Text('About this disease',
-                          style: TextStyle(
-                              fontSize: 13, fontWeight: FontWeight.w700)),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 24),
+
+                      // About
+                      Text(
+                        r.isHealthy ? 'About this result' : 'About this disease',
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.textDark,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
                       Text(
                         r.description.isEmpty
                             ? 'No description available.'
                             : r.description,
                         style: const TextStyle(
-                            fontSize: 10.5,
-                            height: 1.5,
-                            color: AppColors.mutedText),
+                          fontSize: 15,
+                          height: 1.6,
+                          color: AppColors.mutedText,
+                        ),
                       ),
-                      const SizedBox(height: 20),
-                      SizedBox(
-                        width: double.infinity,
-                        height: 46,
-                        child: FilledButton.icon(
-                          onPressed: () => Navigator.push(
-                            context,
-                            MaterialPageRoute<void>(
-                              builder: (_) => XaiExplanationScreen(record: r),
-                            ),
-                          ),
-                          icon:
-                              const Icon(Icons.visibility_outlined, size: 18),
-                          label: const Text('View XAI Explanation'),
-                          style: FilledButton.styleFrom(
-                            backgroundColor: AppColors.forest,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10)),
+                      const SizedBox(height: 32),
+
+                      _DarkPillButton(
+                        label: 'View XAI Explanation',
+                        onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute<void>(
+                            builder: (_) => XaiExplanationScreen(record: r),
                           ),
                         ),
                       ),
-                      const SizedBox(height: 10),
-                      SizedBox(
-                        width: double.infinity,
-                        height: 46,
-                        child: OutlinedButton.icon(
-                          onPressed: () => _openChatbotFor(context, r),
-                          icon:
-                              const Icon(Icons.chat_bubble_outline, size: 18),
-                          label: const Text('Ask the Chatbot'),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.textDark,
-                            side: const BorderSide(color: AppColors.textDark),
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10)),
-                          ),
-                        ),
+                      const SizedBox(height: 12),
+                      _ChatPillButton(
+                        label: 'Ask the Chatbot',
+                        onPressed: () => _openChatbotFor(context, r),
                       ),
                     ],
                   ),
@@ -1091,6 +1154,8 @@ class ScanDetailsScreen extends StatelessWidget {
             ],
           ),
         ),
+        bottomNavigationBar:
+            const AppBottomNavigationBar(current: NavTab.history),
       ),
     );
   }
@@ -1115,61 +1180,65 @@ class _XaiExplanationScreenState extends State<XaiExplanationScreen> {
   Widget _toggle() {
     Widget seg(String label, bool value) {
       final sel = _heatmap == value;
-      return Expanded(
-        child: GestureDetector(
-          onTap: () => setState(() => _heatmap = value),
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 7),
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: sel ? AppColors.card : Colors.transparent,
-              borderRadius: BorderRadius.circular(18),
+      return GestureDetector(
+        onTap: () => setState(() => _heatmap = value),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          width: 112,
+          padding: const EdgeInsets.symmetric(vertical: 11),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: sel ? AppColors.primary : Colors.transparent,
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: sel ? Colors.white : AppColors.mutedText,
             ),
-            child: Text(label,
-                style: TextStyle(
-                  fontSize: 10,
-                  color: sel ? AppColors.textDark : AppColors.mutedText,
-                  fontWeight: sel ? FontWeight.w600 : FontWeight.w400,
-                )),
           ),
         ),
       );
     }
 
     return Container(
-      width: 170,
-      padding: const EdgeInsets.all(3),
+      padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: const Color(0xFFE9EAE9),
-        borderRadius: BorderRadius.circular(20),
+        color: const Color(0xFFE6E9E3),
+        borderRadius: BorderRadius.circular(28),
       ),
-      child: Row(children: [seg('Heatmap', true), seg('Region', false)]),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [seg('Heatmap', true), seg('Region', false)],
+      ),
     );
   }
 
   // Legend: color scale for the heatmap, outline key for the region view.
   Widget _legend() {
-    const style = TextStyle(fontSize: 8, color: AppColors.mutedText);
+    const style = TextStyle(fontSize: 13, color: AppColors.mutedText);
     if (_heatmap) {
       return Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           const Text('Low', style: style),
-          const SizedBox(width: 4),
+          const SizedBox(width: 6),
           Container(
-            width: 50,
-            height: 4,
+            width: 56,
+            height: 7,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(2),
+              borderRadius: BorderRadius.circular(4),
               gradient: const LinearGradient(colors: [
                 Color(0xFF3B5BDB),
-                Color(0xFF37B24D),
+                Color(0xFF22B8CF),
                 Color(0xFFFAB005),
                 Color(0xFFE03131),
               ]),
             ),
           ),
-          const SizedBox(width: 4),
+          const SizedBox(width: 6),
           const Text('High', style: style),
         ],
       );
@@ -1177,188 +1246,234 @@ class _XaiExplanationScreenState extends State<XaiExplanationScreen> {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Container(width: 16, height: 2, color: const Color(0xFFE03131)),
-        const SizedBox(width: 4),
-        const Text('High Attention', style: style),
+        Container(
+          width: 24,
+          height: 4,
+          decoration: BoxDecoration(
+            color: const Color(0xFFE03131),
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        const SizedBox(width: 8),
+        const Text('High attention', style: style),
       ],
     );
   }
 
   // One step of the "How the AI decided" card.
-  Widget _step(int n, String label, String value, double percent, Color c) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          width: 20,
-          height: 20,
-          alignment: Alignment.center,
-          decoration: const BoxDecoration(
-              color: Color(0xFFE9EAE9), shape: BoxShape.circle),
-          child: Text('$n', style: const TextStyle(fontSize: 9)),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(label,
-                  style: const TextStyle(
-                      fontSize: 9, color: AppColors.mutedText)),
-              const SizedBox(height: 2),
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(value,
-                        style: const TextStyle(
-                            fontSize: 11, fontWeight: FontWeight.w600)),
+  Widget _step(int n, String label, String value, double percent,
+      bool isHealthy, {required bool showLine}) {
+    final p = percent.round().clamp(0, 100);
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Number circle + connecting line
+          SizedBox(
+            width: 30,
+            child: Column(
+              children: [
+                const SizedBox(height: 4),
+                Container(
+                  width: 30,
+                  height: 30,
+                  alignment: Alignment.center,
+                  decoration: const BoxDecoration(
+                    color: AppColors.lime,
+                    shape: BoxShape.circle,
                   ),
-                  Text('${percent.round()}%',
-                      style: const TextStyle(
-                          fontSize: 9, fontWeight: FontWeight.w700)),
+                  child: Text(
+                    '$n',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                ),
+                if (showLine)
+                  Expanded(
+                    child: Container(
+                      width: 2,
+                      margin: const EdgeInsets.symmetric(vertical: 6),
+                      color: AppColors.inputBorder,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(bottom: showLine ? 18 : 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.mutedText,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          value,
+                          style: const TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.textDark,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        '$p%',
+                        style: const TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textDark,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  ConfidenceBar(percent: p, isHealthy: isHealthy),
                 ],
               ),
-              const SizedBox(height: 4),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(4),
-                child: LinearProgressIndicator(
-                  value: percent / 100,
-                  minHeight: 3,
-                  backgroundColor: AppColors.line,
-                  valueColor: AlwaysStoppedAnimation<Color>(c),
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final r = widget.record;
-    final color = r.isHealthy ? AppColors.leafGreen : AppColors.orange;
     final imageUrl =
         _heatmap ? (r.heatmapUrl ?? r.imageUrl) : (r.regionUrl ?? r.imageUrl);
 
     return Directionality(
       textDirection: TextDirection.ltr,
       child: Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: AppColors.pageBg,
         body: SafeArea(
+          bottom: false,
           child: Column(
             children: [
-              const _TopBar(title: 'XAI Explanation'),
+              const SubPageHeader(title: 'XAI Explanation'),
               Expanded(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+                  padding: const EdgeInsets.fromLTRB(22, 10, 22, 24),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                                            GestureDetector(
-                        onTap: () {
-                          if (imageUrl == null) return;
-                          Navigator.of(context).push(
-                            MaterialPageRoute<void>(
-                              builder: (_) => FullImageViewer(url: imageUrl),
+                      _PhotoBox(url: imageUrl, isHealthy: r.isHealthy),
+                      const SizedBox(height: 18),
+
+                      // Toggle + legend
+                      Row(
+                        children: [
+                          _toggle(),
+                          const Spacer(),
+                          Flexible(
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.centerRight,
+                              child: _legend(),
                             ),
-                          );
-                        },
-                        child: Stack(
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        _heatmap
+                            ? "Grad-CAM++ heatmap: red areas are the parts of the photo that most influenced the AI's decision."
+                            : 'Red outline: the region of the leaf the AI focused on most when making its decision.',
+                        style: const TextStyle(
+                          fontSize: 15,
+                          height: 1.5,
+                          color: AppColors.textDark,
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+
+                      // How the AI decided
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.fromLTRB(20, 20, 20, 22),
+                        decoration: _whiteCard(),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            ScanImage(
-                              url: imageUrl,
-                              isHealthy: r.isHealthy,
-                              width: double.infinity,
-                              height: 170,
-                              radius: 14,
+                            const Text(
+                              'How the AI decided',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.textDark,
+                              ),
                             ),
-                            Positioned(
-                              right: 8,
-                              bottom: 8,
-                              child: Container(
-                                padding: const EdgeInsets.all(5),
-                                decoration: BoxDecoration(
-                                  color: Colors.black45,
-                                  borderRadius: BorderRadius.circular(8),
+                            const SizedBox(height: 18),
+                            _step(
+                              1,
+                              'Health check',
+                              r.isHealthy ? 'Healthy' : 'Diseased',
+                              r.healthConfidence,
+                              r.isHealthy,
+                              showLine: !r.isHealthy,
+                            ),
+                            if (!r.isHealthy)
+                              _step(
+                                2,
+                                'Disease type',
+                                r.title,
+                                r.typeConfidence,
+                                r.isHealthy,
+                                showLine: false,
+                              ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Note
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE6F0E6),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(Icons.info_outline_rounded,
+                                color: AppColors.healthyGreen, size: 22),
+                            SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                'Highlights show where the AI looked, not confirmed disease spots. Ask a specialist.',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  height: 1.45,
+                                  fontWeight: FontWeight.w500,
+                                  color: AppColors.healthyGreen,
                                 ),
-                                child: const Icon(Icons.zoom_out_map,
-                                    color: Colors.white, size: 16),
                               ),
                             ),
                           ],
                         ),
                       ),
-                      Row(
-                        children: [
-                          _toggle(),
-                          const Spacer(),
-                          _legend(),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        _heatmap
-                            ? "Grad-CAM++ heatmap: red areas are the parts of the photo that influenced the AI's decision the most."
-                            : 'Region: the red outline marks the area of the photo the AI paid the most attention to.',
-                        style: const TextStyle(
-                            fontSize: 10,
-                            height: 1.4,
-                            color: AppColors.textDark),
-                      ),
-                      const SizedBox(height: 14),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: AppColors.card,
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: _cardShadow,
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text('How the AI decided',
-                                style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w700)),
-                            const SizedBox(height: 12),
-                            _step(1, 'Health check',
-                                r.isHealthy ? 'Healthy' : 'Diseased',
-                                r.healthConfidence, color),
-                            if (!r.isHealthy) ...[
-                              const SizedBox(height: 12),
-                              _step(2, 'Disease type', r.title,
-                                  r.typeConfidence, color),
-                            ],
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      const Text(
-                        'Highlighted areas show where the AI looked, not confirmed disease spots. For treatment, check with an agricultural specialist.',
-                        style: TextStyle(
-                            fontSize: 8,
-                            height: 1.4,
-                            color: AppColors.mutedText),
-                      ),
-                      const SizedBox(height: 16),
-                      SizedBox(
-                        width: double.infinity,
-                        height: 46,
-                        child: OutlinedButton.icon(
-                          onPressed: () => _openChatbotFor(context, r),
-                          icon:
-                              const Icon(Icons.chat_bubble_outline, size: 18),
-                          label: const Text('Ask the Chatbot about this'),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.textDark,
-                            side: const BorderSide(color: AppColors.textDark),
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10)),
-                          ),
-                        ),
+                      const SizedBox(height: 18),
+
+                      _ChatPillButton(
+                        label: 'Ask the Chatbot about this',
+                        onPressed: () => _openChatbotFor(context, r),
                       ),
                     ],
                   ),
@@ -1367,11 +1482,12 @@ class _XaiExplanationScreenState extends State<XaiExplanationScreen> {
             ],
           ),
         ),
+        bottomNavigationBar:
+            const AppBottomNavigationBar(current: NavTab.history),
       ),
     );
   }
 }
-
 // ============================================================
 // FULL-SCREEN IMAGE VIEWER (tap an XAI image to open it)
 // ============================================================
