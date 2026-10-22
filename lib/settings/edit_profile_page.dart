@@ -26,7 +26,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
   @override
   void initState() {
     super.initState();
-    // Start with the logged-in user's current data
     final user = _auth.currentUser;
     _nameController = TextEditingController(text: user?.displayName ?? '');
     _emailController = TextEditingController(text: user?.email ?? '');
@@ -40,47 +39,26 @@ class _EditProfilePageState extends State<EditProfilePage> {
   }
 
   Future<void> _saveChanges() async {
-    // Ignore extra taps while saving
     if (_isSaving) return;
-
-    // Close the keyboard
     FocusScope.of(context).unfocus();
 
-    // Stop if any field is invalid (shows the red error)
+    // Shows the red error under the field if the name is empty
     if (!_formKey.currentState!.validate()) return;
 
-    final user = _auth.currentUser;
-    final oldEmail = user?.email ?? '';
     final newName = _nameController.text.trim();
-    final newEmail = _emailController.text.trim();
-    final nameChanged = newName != (user?.displayName ?? '');
-    final emailChanged = newEmail != oldEmail;
-
-    if (!nameChanged && !emailChanged) {
+    if (newName == (_auth.currentUser?.displayName ?? '')) {
       _showError('No changes to save.');
       return;
     }
 
     setState(() => _isSaving = true);
-
     try {
-      if (nameChanged) await _auth.updateName(newName);
-      if (emailChanged) await _auth.updateEmail(newEmail);
+      await _auth.updateName(newName);
       if (!mounted) return;
+      setState(() => _successMessage = 'Profile updated successfully');
 
-      setState(() {
-        _successMessage = emailChanged
-            ? 'We sent a confirmation link to $newEmail. '
-                'Your email will change after you open it.'
-            : 'Profile updated successfully';
-
-        // The email only changes after the link is opened,
-        // so show the current email until then
-        if (emailChanged) _emailController.text = oldEmail;
-      });
-
-      // Hide the message after a few seconds
-      Future.delayed(const Duration(seconds: 6), () {
+      // Hide the message after 4 seconds
+      Future.delayed(const Duration(seconds: 4), () {
         if (mounted) setState(() => _successMessage = null);
       });
     } catch (e) {
@@ -101,29 +79,22 @@ class _EditProfilePageState extends State<EditProfilePage> {
   }
 
   String? _validateName(String? value) {
-    if (value == null || value.trim().isEmpty) {
-      return 'Name is required';
-    }
-    return null;
-  }
-
-  String? _validateEmail(String? value) {
-    final email = value?.trim() ?? '';
-    if (email.isEmpty) return 'Email is required';
-    if (!email.contains('@')) return 'Enter a valid email';
+    if (value == null || value.trim().isEmpty) return 'Name is required';
     return null;
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.pageBg,
       body: SafeArea(
+        bottom: false,
         child: Column(
           children: [
             const SubPageHeader(title: 'Edit Profile'),
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+                padding: const EdgeInsets.fromLTRB(22, 12, 22, 24),
                 child: Form(
                   key: _formKey,
                   child: Column(
@@ -134,41 +105,55 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         const SizedBox(height: 20),
                       ],
 
-                      // Profile picture placeholder
+                      // Avatar
                       Center(
                         child: Container(
-                          width: 90,
-                          height: 90,
-                          decoration: const BoxDecoration(
-                            color: AppColors.cream,
+                          width: 112,
+                          height: 112,
+                          decoration: BoxDecoration(
+                            color: AppColors.softGreen,
                             shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 4),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.lime.withValues(alpha: 0.30),
+                                blurRadius: 24,
+                                spreadRadius: 2,
+                              ),
+                            ],
                           ),
                           child: const Icon(
-                            Icons.person_outline,
-                            size: 46,
-                            color: AppColors.deepForest,
+                            Icons.person_outline_rounded,
+                            size: 56,
+                            color: AppColors.primary,
                           ),
                         ),
                       ),
                       const SizedBox(height: 32),
 
                       SettingsTextField(
-                        label: 'Name',
+                        label: 'Full name',
                         controller: _nameController,
                         validator: _validateName,
+                        icon: Icons.person_outline_rounded,
+                        hint: 'Your name',
                       ),
                       const SizedBox(height: 20),
 
+                      // Email can't be changed
                       SettingsTextField(
                         label: 'Email',
                         controller: _emailController,
-                        keyboardType: TextInputType.emailAddress,
-                        validator: _validateEmail,
+                        icon: Icons.mail_outline_rounded,
+                        readOnly: true,
+                        suffix: const Icon(Icons.lock_outline_rounded,
+                            size: 20, color: AppColors.mutedText),
                       ),
-                      const SizedBox(height: 48),
+                      const SizedBox(height: 40),
 
                       SaveButton(
-                        label: _isSaving ? 'Saving...' : 'Save Changes',
+                        label: 'Save Changes',
+                        loading: _isSaving,
                         onPressed: _saveChanges,
                       ),
                     ],

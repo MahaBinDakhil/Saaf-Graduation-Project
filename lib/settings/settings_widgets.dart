@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../widgets/app_bottom_nav.dart';
 
-/// Header for inner settings pages: back arrow and centered title.
+/// Header for inner settings pages: round back button and centered title.
 class SubPageHeader extends StatelessWidget {
   const SubPageHeader({super.key, required this.title});
 
@@ -11,37 +11,46 @@ class SubPageHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 56,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          Align(
-            alignment: Alignment.centerLeft,
-            child: IconButton(
-              icon: const Icon(
-                Icons.chevron_left,
-                color: AppColors.textDark,
-                size: 30,
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+      child: SizedBox(
+        height: 48,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Align(
+              alignment: Alignment.centerLeft,
+              child: GestureDetector(
+                onTap: () => Navigator.pop(context),
+                child: Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppColors.inputBorder),
+                  ),
+                  child: const Icon(Icons.chevron_left,
+                      color: AppColors.textDark, size: 26),
+                ),
               ),
-              onPressed: () => Navigator.pop(context),
             ),
-          ),
-          Text(
-            title,
-            style: const TextStyle(
-              color: AppColors.textDark,
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
+            Text(
+              title,
+              style: const TextStyle(
+                color: AppColors.textDark,
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
 
-/// Label with a green text field under it.
+/// Label with a rounded white text field under it.
 class SettingsTextField extends StatelessWidget {
   const SettingsTextField({
     super.key,
@@ -50,6 +59,12 @@ class SettingsTextField extends StatelessWidget {
     this.validator,
     this.keyboardType,
     this.obscureText = false,
+    this.icon,
+    this.hint,
+    this.readOnly = false,
+    this.onToggleObscure,
+    this.onChanged,
+    this.suffix,
   });
 
   final String label;
@@ -57,16 +72,36 @@ class SettingsTextField extends StatelessWidget {
   final String? Function(String?)? validator;
   final TextInputType? keyboardType;
   final bool obscureText;
+  final IconData? icon;
+  final String? hint;
+  final bool readOnly;
+  final VoidCallback? onToggleObscure; // shows the eye button
+  final ValueChanged<String>? onChanged;
+  final Widget? suffix; // e.g. a green check
 
-  static OutlineInputBorder _border(Color color) {
+  static OutlineInputBorder _border(Color color, [double width = 1]) {
     return OutlineInputBorder(
-      borderRadius: BorderRadius.circular(8),
-      borderSide: BorderSide(color: color, width: 1.5),
+      borderRadius: BorderRadius.circular(27),
+      borderSide: BorderSide(color: color, width: width),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    Widget? suffixIcon = suffix;
+    if (onToggleObscure != null) {
+      suffixIcon = IconButton(
+        onPressed: onToggleObscure,
+        icon: Icon(
+          obscureText
+              ? Icons.visibility_outlined
+              : Icons.visibility_off_outlined,
+          color: AppColors.mutedText,
+          size: 21,
+        ),
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -84,21 +119,53 @@ class SettingsTextField extends StatelessWidget {
           validator: validator,
           keyboardType: keyboardType,
           obscureText: obscureText,
-          cursorColor: Colors.white,
-          style: const TextStyle(color: Colors.white, fontSize: 14),
+          readOnly: readOnly,
+          onChanged: onChanged,
+          cursorColor: AppColors.primary,
+          style: TextStyle(
+            color: readOnly ? AppColors.mutedText : AppColors.textDark,
+            fontSize: 15,
+          ),
           decoration: InputDecoration(
+            hintText: hint,
+            hintStyle:
+                const TextStyle(color: AppColors.mutedText, fontSize: 15),
             filled: true,
-            fillColor: AppColors.leafGreen,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 14,
-              vertical: 14,
+            // Light red background when the field has an error
+            fillColor: WidgetStateColor.resolveWith(
+              (states) => states.contains(WidgetState.error)
+                  ? const Color(0xFFFFF5F3)
+                  : Colors.white,
             ),
-            border: _border(Colors.transparent),
-            enabledBorder: _border(Colors.transparent),
-            focusedBorder: _border(AppColors.forest),
-            errorBorder: _border(Colors.red),
-            focusedErrorBorder: _border(Colors.red),
-            errorStyle: const TextStyle(fontSize: 12),
+            contentPadding: EdgeInsets.symmetric(
+              horizontal: icon == null ? 20 : 0,
+              vertical: 17,
+            ),
+            prefixIcon: icon == null
+                ? null
+                : Padding(
+                    padding: const EdgeInsets.only(left: 18, right: 10),
+                    child: Icon(icon, size: 21),
+                  ),
+            prefixIconConstraints: const BoxConstraints(minWidth: 0),
+            prefixIconColor: WidgetStateColor.resolveWith(
+              (states) => states.contains(WidgetState.error)
+                  ? AppColors.danger
+                  : (states.contains(WidgetState.focused)
+                      ? AppColors.primary
+                      : AppColors.mutedText),
+            ),
+            suffixIcon: suffixIcon,
+            border: _border(AppColors.inputBorder),
+            enabledBorder: _border(AppColors.inputBorder),
+            focusedBorder: _border(AppColors.primary, 1.5),
+            errorBorder: _border(AppColors.danger, 1.5),
+            focusedErrorBorder: _border(AppColors.danger, 1.5),
+            errorStyle: const TextStyle(
+              color: AppColors.danger,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
       ],
@@ -106,41 +173,52 @@ class SettingsTextField extends StatelessWidget {
   }
 }
 
-/// Full-width dark green button used to save forms.
+/// Full-width dark green pill button used to save forms.
 class SaveButton extends StatelessWidget {
   const SaveButton({
     super.key,
     required this.onPressed,
     this.label = 'Save Changes',
+    this.loading = false,
   });
 
   final VoidCallback onPressed;
   final String label;
+  final bool loading;
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       width: double.infinity,
-      height: 50,
+      height: 54,
       child: FilledButton(
-        onPressed: onPressed,
+        onPressed: loading ? null : onPressed,
         style: FilledButton.styleFrom(
-          backgroundColor: AppColors.forest,
+          backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
+          disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.6),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(27),
           ),
         ),
-        child: Text(
-          label,
-          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-        ),
+        child: loading
+            ? const SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(
+                    color: Colors.white, strokeWidth: 2.5),
+              )
+            : Text(
+                label,
+                style:
+                    const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+              ),
       ),
     );
   }
 }
 
-/// Green message box shown after a successful save.
+/// Light green message box shown after a successful save.
 class SuccessBanner extends StatelessWidget {
   const SuccessBanner({super.key, required this.message});
 
@@ -150,22 +228,31 @@ class SuccessBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       decoration: BoxDecoration(
-        color: AppColors.leafGreen.withValues(alpha: 0.45),
-        borderRadius: BorderRadius.circular(10),
+        color: const Color(0xFFE6F2E9),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFCDE5D3)),
       ),
       child: Row(
         children: [
-          const Icon(Icons.check, color: AppColors.forest),
-          const SizedBox(width: 10),
+          Container(
+            width: 28,
+            height: 28,
+            decoration: const BoxDecoration(
+              color: AppColors.healthyGreen,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.check, color: Colors.white, size: 17),
+          ),
+          const SizedBox(width: 12),
           Expanded(
             child: Text(
               message,
               style: const TextStyle(
-                color: AppColors.deepForest,
+                color: AppColors.healthyGreen,
                 fontSize: 14,
-                fontWeight: FontWeight.w500,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),

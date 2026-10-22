@@ -52,6 +52,19 @@ class AuthService {
     );
   }
 
+       // ============================================================
+     // GUEST
+     // ============================================================
+
+     /// Signs in without an email (Firebase Anonymous).
+     Future<UserCredential> signInAsGuest() {
+       return _auth.signInAnonymously();
+     }
+  /// True when the current user is a guest.
+  bool get isGuest => _auth.currentUser?.isAnonymous ?? false;
+
+
+
   // ============================================================
   // FORGOT PASSWORD
   // ============================================================

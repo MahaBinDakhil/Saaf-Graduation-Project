@@ -9,6 +9,9 @@ import 'chatbot.dart';
 import 'scan_page.dart';
 import 'services/model_service.dart';
 import 'History.dart';
+import 'settings/settings_widgets.dart';
+import 'theme/app_colors.dart';
+import 'widgets/app_bottom_nav.dart';
 
 class AnalysisResultScreen extends StatelessWidget {
   final File imageFile;
@@ -171,644 +174,466 @@ class AnalysisResultScreen extends StatelessWidget {
     final isHealthy = result.isHealthy;
 
     return Scaffold(
-      backgroundColor: backgroundColor,
+      backgroundColor: AppColors.pageBg,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // TOP BAR
-              Row(
-                children: [
-                  _CircleIconButton(
-                    icon: Icons.arrow_back_ios_new,
-                    onTap: () => Navigator.pop(context),
-                  ),
-                  const SizedBox(width: 12),
-                  const Expanded(
-                    child: Text(
-                      'Analysis result',
-                      style: TextStyle(
-                        color: darkGreen,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 16),
-
-              // ANALYZED IMAGE
-              Container(
-                height: 172,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(18),
-                  color: const Color(0xFFDDE7D9),
-                ),
-                clipBehavior: Clip.antiAlias,
-                child: Stack(
-                  fit: StackFit.expand,
+        bottom: false,
+        child: Column(
+          children: [
+            const SubPageHeader(title: 'Analysis Result'),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(22, 8, 22, 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (result.heatmap != null)
-                      Image.memory(
-                        result.heatmap!,
+                    // ---------- IMAGE ----------
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(28),
+                      child: SizedBox(
+                        height: 230,
                         width: double.infinity,
-                        height: double.infinity,
-                        fit: BoxFit.cover,
-                      )
-                    else
-                      Image.file(
-                        imageFile,
-                        width: double.infinity,
-                        height: double.infinity,
-                        fit: BoxFit.cover,
-                      ),
-                    Positioned(
-                      left: 12,
-                      bottom: 12,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 7,
-                        ),
-                        decoration: BoxDecoration(
-                          color: darkGreen.withValues(alpha: 0.88),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
+                        child: Stack(
+                          fit: StackFit.expand,
                           children: [
-                            Icon(
-                              Icons.auto_awesome,
-                              size: 12,
-                              color: Colors.white,
-                            ),
-                            SizedBox(width: 5),
-                            Text(
-                              'Analyzed just now',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                                fontWeight: FontWeight.w600,
+                            if (result.heatmap != null)
+                              Image.memory(result.heatmap!, fit: BoxFit.cover)
+                            else
+                              Image.file(imageFile, fit: BoxFit.cover),
+                            Positioned(
+                              left: 16,
+                              bottom: 16,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 14, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color:
+                                      AppColors.primary.withValues(alpha: 0.8),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.auto_awesome_outlined,
+                                        size: 16, color: AppColors.lime),
+                                    SizedBox(width: 8),
+                                    Text(
+                                      'Analyzed just now',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ],
                         ),
                       ),
                     ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 12),
-
-              // PREDICTION CARD
-              _WhiteCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          width: 38,
-                          height: 38,
-                          decoration: BoxDecoration(
-                            color: isHealthy
-                                ? const Color(0xFFE4F2E5)
-                                : const Color(0xFFFFF0DC),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Icon(
-                            isHealthy
-                                ? Icons.check_circle_outline
-                                : Icons.priority_high_rounded,
-                            color: isHealthy
-                                ? primaryGreen
-                                : const Color(0xFFF18B20),
-                            size: 22,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'PREDICTION',
-                                style: TextStyle(
-                                  color: textGrey,
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: 1.2,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                result.diseaseName,
-                                style: const TextStyle(
-                                  color: darkGreen,
-                                  fontSize: 17,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 16),
-                    Divider(color: Colors.grey.shade200, height: 1),
                     const SizedBox(height: 16),
 
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Expanded(
-                          child: Column(
+                    // ---------- PREDICTION CARD ----------
+                    _WhiteCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
-                                'CONFIDENCE',
-                                style: TextStyle(
-                                  color: textGrey,
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: 1.1,
-                                ),
-                              ),
-                              const SizedBox(height: 5),
-                              Text(
-                                result.confidenceText,
-                                style: const TextStyle(
-                                  color: darkGreen,
-                                  fontSize: 21,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                              const SizedBox(height: 18),
-                              const Text(
-                                'SEVERITY',
-                                style: TextStyle(
-                                  color: textGrey,
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: 1.1,
-                                ),
-                              ),
-                              const SizedBox(height: 5),
                               Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 9,
-                                  vertical: 5,
-                                ),
+                                width: 52,
+                                height: 52,
                                 decoration: BoxDecoration(
                                   color: isHealthy
-                                      ? const Color(0xFFE4F2E5)
-                                      : const Color(0xFFFFEDD8),
-                                  borderRadius: BorderRadius.circular(20),
+                                      ? AppColors.softGreen
+                                      : const Color(0xFFFBE7DD),
+                                  borderRadius: BorderRadius.circular(16),
                                 ),
-                                child: Text(
-                                  isHealthy ? 'Healthy' : 'Needs assessment',
-                                  style: TextStyle(
-                                    color: isHealthy
-                                        ? primaryGreen
-                                        : const Color(0xFFD87518),
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                                child: Icon(
+                                  isHealthy
+                                      ? Icons.check_circle_outline_rounded
+                                      : Icons.warning_amber_rounded,
+                                  color: isHealthy
+                                      ? AppColors.healthyGreen
+                                      : AppColors.diseased,
+                                  size: 28,
                                 ),
                               ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const SizedBox(height: 4),
+                                    const _SmallLabel('PREDICTION'),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      result.diseaseName,
+                                      style: const TextStyle(
+                                        color: AppColors.textDark,
+                                        fontSize: 22,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              _StatusPill(isHealthy: isHealthy),
                             ],
                           ),
-                        ),
-                        _ConfidenceCircle(
-                          confidence: result.confidence,
-                        ),
-                        const SizedBox(width: 14),
-                        const Expanded(
-                          child: Column(
+                          const SizedBox(height: 16),
+                          const Divider(
+                              color: AppColors.inputBorder, height: 1),
+                          const SizedBox(height: 16),
+                          Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              SizedBox(height: 49),
-                              Text(
-                                'PALM',
-                                style: TextStyle(
-                                  color: textGrey,
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: 1.1,
-                                ),
-                              ),
-                              SizedBox(height: 5),
-                              Text(
-                                'New scan',
-                                style: TextStyle(
-                                  color: darkGreen,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    if (result.lowConfidence) ...[
-                      const SizedBox(height: 14),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFFF4DD),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Text(
-                          'The model has low confidence in this prediction. '
-                          'Try taking a clearer photo with better lighting.',
-                          style: TextStyle(
-                            color: Color(0xFF8A5A14),
-                            fontSize: 11,
-                            height: 1.4,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 12),
-
-              // ABOUT THIS RESULT
-              _WhiteCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _SectionTitle(
-                      title: isHealthy
-                          ? 'About this result'
-                          : 'About this disease',
-                      icon: Icons.info_outline,
-                    ),
-                    const SizedBox(height: 12),
-                                        _DiseaseInfo(
-                      diseaseId: result.diseaseId,
-                      builder: (d) {
-                        final description =
-                            (d['description'] ?? '').toString();
-                        return Text(
-                          description.isNotEmpty
-                              ? description
-                              : isHealthy
-                                  ? 'The model classified this image as a healthy date palm leaf. Continue monitoring the palm and scan it again if you notice any changes.'
-                                  : 'The AI model identified ${result.diseaseName} in the submitted image. Review the palm carefully and seek expert assessment to confirm the diagnosis.',
-                          style: const TextStyle(
-                            color: textGrey,
-                            fontSize: 11,
-                            height: 1.55,
-                          ),
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 18),
-                    const Text(
-                      'Model predictions',
-                      style: TextStyle(
-                        color: darkGreen,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    if (result.predictions.isEmpty)
-                      const Text(
-                        'No additional predictions available.',
-                        style: TextStyle(
-                          color: textGrey,
-                          fontSize: 11,
-                        ),
-                      )
-                    else
-                      ...result.predictions.take(3).map(
-                        (prediction) => Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
-                          child: Row(
-                            children: [
-                              const Icon(
-                                Icons.check,
-                                color: primaryGreen,
-                                size: 15,
-                              ),
-                              const SizedBox(width: 7),
+                              // Confidence
                               Expanded(
-                                child: Text(
-                                  prediction.name,
-                                  style: const TextStyle(
-                                    color: textGrey,
-                                    fontSize: 11,
-                                  ),
+                                flex: 4,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const _SmallLabel('CONFIDENCE'),
+                                    const SizedBox(height: 8),
+                                    Row(
+                                      children: [
+                                        _ConfidenceCircle(
+                                            confidence: result.confidence),
+                                        const SizedBox(width: 8),
+                                        Flexible(
+                                          child: FittedBox(
+                                            fit: BoxFit.scaleDown,
+                                            child: Text(
+                                              result.confidenceText,
+                                              style: const TextStyle(
+                                                color: AppColors.textDark,
+                                                fontSize: 20,
+                                                fontWeight: FontWeight.w800,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
                                 ),
                               ),
-                              Text(
-                                prediction.scoreText,
-                                style: const TextStyle(
-                                  color: darkGreen,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
+                              // Severity
+                              Expanded(
+                                flex: 6,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const _SmallLabel('SEVERITY'),
+                                    const SizedBox(height: 10),
+                                    FittedBox(
+                                      fit: BoxFit.scaleDown,
+                                      child: _SeverityPill(isHealthy: isHealthy),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              // Palm
+                              const Expanded(
+                                flex: 3,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    _SmallLabel('PALM'),
+                                    SizedBox(height: 12),
+                                    FittedBox(
+                                      fit: BoxFit.scaleDown,
+                                      child: Text(
+                                        'New scan',
+                                        style: TextStyle(
+                                          color: AppColors.textDark,
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ],
                           ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 12),
-
-              // EFFECTS ON YOUR PALM
-              _WhiteCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Effects on your palm',
-                      style: TextStyle(
-                        color: darkGreen,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
+                          if (result.lowConfidence) ...[
+                            const SizedBox(height: 16),
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(14),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFFF4DD),
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: const Text(
+                                'The model has low confidence in this prediction. '
+                                'Try taking a clearer photo with better lighting.',
+                                style: TextStyle(
+                                  color: Color(0xFF8A5A14),
+                                  fontSize: 13,
+                                  height: 1.45,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 12),
-                                        _DiseaseInfo(
-                      diseaseId: result.diseaseId,
-                      builder: (d) {
-                        final symptoms = _diseaseList(d['symptoms']);
-                        if (symptoms.isEmpty) {
-                          return Text(
-                            isHealthy
-                                ? 'No disease was identified by the model in this image. Keep following good agricultural practices and monitor new leaf growth.'
-                                : 'The potential effects depend on the disease and its severity. Monitor affected leaves and other parts of the palm for changes.',
-                            style: const TextStyle(
-                              color: textGrey,
-                              fontSize: 11,
-                              height: 1.55,
+                    const SizedBox(height: 16),
+
+                    // ---------- ABOUT ----------
+                    _WhiteCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _SectionTitle(
+                            title: isHealthy
+                                ? 'About this result'
+                                : 'About this disease',
+                            icon: Icons.info_outline_rounded,
+                          ),
+                          const SizedBox(height: 8),
+                          _DiseaseInfo(
+                            diseaseId: result.diseaseId,
+                            builder: (d) {
+                              final description =
+                                  (d['description'] ?? '').toString();
+                              return Text(
+                                description.isNotEmpty
+                                    ? description
+                                    : isHealthy
+                                        ? 'The model classified this image as a healthy date palm leaf. Continue monitoring the palm and scan it again if you notice any changes.'
+                                        : 'The AI model identified ${result.diseaseName} in the submitted image. Review the palm carefully and seek expert assessment to confirm the diagnosis.',
+                                style: const TextStyle(
+                                  color: AppColors.mutedText,
+                                  fontSize: 15,
+                                  height: 1.55,
+                                ),
+                              );
+                            },
+                          ),
+                          const SizedBox(height: 18),
+                          const Text(
+                            'Model predictions',
+                            style: TextStyle(
+                              color: AppColors.textDark,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
                             ),
-                          );
-                        }
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: symptoms
-                              .map(
-                                (s) => Padding(
-                                  padding: const EdgeInsets.only(bottom: 6),
+                          ),
+                          const SizedBox(height: 10),
+                          if (result.predictions.isEmpty)
+                            const Text(
+                              'No additional predictions available.',
+                              style: TextStyle(
+                                  color: AppColors.mutedText, fontSize: 14),
+                            )
+                          else
+                            for (var i = 0;
+                                i < result.predictions.take(3).length;
+                                i++)
+                              _PredictionRow(
+                                name: result.predictions[i].name,
+                                score: result.predictions[i].score,
+                                top: i == 0,
+                              ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // ---------- EFFECTS ----------
+                    _WhiteCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const _SectionTitle(title: 'Effects on your palm'),
+                          const SizedBox(height: 12),
+                          _DiseaseInfo(
+                            diseaseId: result.diseaseId,
+                            builder: (d) {
+                              final symptoms = _diseaseList(d['symptoms']);
+                              if (symptoms.isEmpty) {
+                                return Text(
+                                  isHealthy
+                                      ? 'No disease was identified by the model in this image. Keep following good agricultural practices and monitor new leaf growth.'
+                                      : 'The potential effects depend on the disease and its severity. Monitor affected leaves and other parts of the palm for changes.',
+                                  style: const TextStyle(
+                                    color: AppColors.mutedText,
+                                    fontSize: 15,
+                                    height: 1.55,
+                                  ),
+                                );
+                              }
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  for (final s in symptoms)
+                                    _BulletItem(
+                                      text: s,
+                                      color: isHealthy
+                                          ? AppColors.healthyGreen
+                                          : AppColors.diseased,
+                                    ),
+                                ],
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // ---------- TREATMENT ----------
+                    _WhiteCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const _SectionTitle(
+                              title: 'Recommended treatment & care'),
+                          const SizedBox(height: 14),
+                          _DiseaseInfo(
+                            diseaseId: result.diseaseId,
+                            builder: (d) {
+                              final steps = _diseaseList(d['treatment']);
+                              final items = steps.isNotEmpty
+                                  ? steps
+                                  : const [
+                                      'Inspect the palm leaves regularly.',
+                                      'Take clear photos of any suspicious areas.',
+                                      'Maintain appropriate irrigation and care.',
+                                      'Seek agricultural expert advice if symptoms persist or spread.',
+                                      'Scan the palm again to monitor changes.',
+                                    ];
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  for (var i = 0; i < items.length; i++)
+                                    _NumberedItem(
+                                      number: '${i + 1}',
+                                      text: items[i],
+                                      showLine: i < items.length - 1,
+                                    ),
+                                ],
+                              );
+                            },
+                          ),
+                          const SizedBox(height: 14),
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFE6F0E6),
+                              borderRadius: BorderRadius.circular(18),
+                            ),
+                            child: const Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Icon(Icons.calendar_today_outlined,
+                                    color: AppColors.healthyGreen, size: 20),
+                                SizedBox(width: 12),
+                                Expanded(
                                   child: Text(
-                                    '•  $s',
-                                    style: const TextStyle(
-                                      color: textGrey,
-                                      fontSize: 11,
-                                      height: 1.55,
+                                    'Next step: monitor this palm and scan it '
+                                    'again if its condition changes.',
+                                    style: TextStyle(
+                                      color: AppColors.healthyGreen,
+                                      fontSize: 14,
+                                      height: 1.45,
+                                      fontWeight: FontWeight.w600,
                                     ),
                                   ),
                                 ),
-                              )
-                              .toList(),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 12),
-
-              // RECOMMENDED TREATMENT
-              _WhiteCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Recommended treatment & care',
-                      style: TextStyle(
-                        color: darkGreen,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                                        _DiseaseInfo(
-                      diseaseId: result.diseaseId,
-                      builder: (d) {
-                        final steps = _diseaseList(d['treatment']);
-                        final items = steps.isNotEmpty
-                            ? steps
-                            : const [
-                                'Inspect the palm leaves regularly.',
-                                'Take clear photos of any suspicious areas.',
-                                'Maintain appropriate irrigation and care.',
-                                'Seek agricultural expert advice if symptoms persist or spread.',
-                                'Scan the palm again to monitor changes.',
-                              ];
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            for (var i = 0; i < items.length; i++)
-                              _NumberedItem(number: '${i + 1}', text: items[i]),
-                          ],
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 12,
-                      ),
-                      decoration: BoxDecoration(
-                        color: lightGreen,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Icon(
-                            Icons.calendar_today_outlined,
-                            color: primaryGreen,
-                            size: 15,
-                          ),
-                          SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              'Recommended next step: monitor this palm '
-                              'and scan it again if its condition changes.',
-                              style: TextStyle(
-                                color: primaryGreen,
-                                fontSize: 10,
-                                height: 1.4,
-                                fontWeight: FontWeight.w500,
-                              ),
+                              ],
                             ),
                           ),
                         ],
                       ),
                     ),
+                    const SizedBox(height: 16),
+
+                    // ---------- DISCLAIMER ----------
+                    const Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(Icons.shield_outlined,
+                            color: AppColors.mutedText, size: 18),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'AI predictions are for preliminary assessment and '
+                            'do not replace professional agricultural diagnosis.',
+                            style: TextStyle(
+                              color: AppColors.mutedText,
+                              fontSize: 13,
+                              height: 1.45,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 22),
+
+                    // ---------- BUTTONS ----------
+                    _PillButton(
+                      label: 'Save to my collection',
+                      icon: Icons.bookmark_border_rounded,
+                      style: _PillStyle.dark,
+                      onPressed: () => _saveScan(context),
+                    ),
+                    const SizedBox(height: 12),
+                    _PillButton(
+                      label: 'Ask AI about this result',
+                      icon: Icons.chat_bubble_outline_rounded,
+                      style: _PillStyle.outline,
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute<void>(
+                            builder: (_) => ChatbotScreen(
+                              diseaseId: result.diseaseId,
+                              confidence: result.confidence,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    _PillButton(
+                      label: 'Scan again',
+                      icon: Icons.photo_camera_outlined,
+                      style: _PillStyle.soft,
+                      onPressed: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute<void>(
+                            builder: (_) => const ScanPage(),
+                          ),
+                        );
+                      },
+                    ),
                   ],
                 ),
               ),
-
-              const SizedBox(height: 12),
-
-              // DISCLAIMER
-              const Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(
-                    Icons.shield_outlined,
-                    color: Color(0xFF9AA69E),
-                    size: 14,
-                  ),
-                  SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      'AI predictions are intended for preliminary '
-                      'assessment and should not replace professional '
-                      'agricultural diagnosis.',
-                      style: TextStyle(
-                        color: textGrey,
-                        fontSize: 9,
-                        height: 1.4,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 16),
-
-              // SAVE TO MY PALM
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: ElevatedButton.icon(
-                  onPressed: () => _saveScan(context),
-                  icon: const Icon(
-                    Icons.bookmark_border_rounded,
-                    color: Colors.white,
-                    size: 20,
-                  ),
-                  label: const Text(
-                    'Save to my palm',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: primaryGreen,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 10),
-
-              // ASK AI
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: OutlinedButton.icon(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute<void>(
-                        builder: (_) => ChatbotScreen(
-                          diseaseId: result.diseaseId,
-                          confidence: result.confidence,
-                        ),
-                      ),
-                    );
-                  },
-                  icon: const Icon(
-                    Icons.chat_bubble_outline_rounded,
-                    color: primaryGreen,
-                    size: 19,
-                  ),
-                  label: const Text(
-                    'Ask AI about this result',
-                    style: TextStyle(
-                      color: primaryGreen,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    side: BorderSide(color: Colors.grey.shade200),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 10),
-
-              // SCAN AGAIN
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: OutlinedButton.icon(
-                  onPressed: () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute<void>(
-                        builder: (_) => const ScanPage(),
-                      ),
-                    );
-                  },
-                  icon: const Icon(
-                    Icons.camera_alt_outlined,
-                    color: primaryGreen,
-                    size: 19,
-                  ),
-                  label: const Text(
-                    'Scan again',
-                    style: TextStyle(
-                      color: primaryGreen,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    side: BorderSide(color: Colors.grey.shade200),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
+      bottomNavigationBar:
+          const AppBottomNavigationBar(current: NavTab.history),
     );
   }
 }
 
-// WHITE CARD
+// ============================================================
+// SMALL WIDGETS
+// ============================================================
+
 class _WhiteCard extends StatelessWidget {
   final Widget child;
 
@@ -818,28 +643,48 @@ class _WhiteCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 22),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: const Color(0xFFE8ECE6),
-        ),
+        borderRadius: BorderRadius.circular(26),
+        border: Border.all(color: const Color(0xFFEDEFEA)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0D000000),
+            blurRadius: 12,
+            offset: Offset(0, 4),
+          ),
+        ],
       ),
       child: child,
     );
   }
 }
 
-// SECTION TITLE
+/// Small grey uppercase label, e.g. "CONFIDENCE".
+class _SmallLabel extends StatelessWidget {
+  const _SmallLabel(this.text);
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: const TextStyle(
+        color: AppColors.mutedText,
+        fontSize: 12,
+        fontWeight: FontWeight.w700,
+        letterSpacing: 1.2,
+      ),
+    );
+  }
+}
+
 class _SectionTitle extends StatelessWidget {
   final String title;
-  final IconData icon;
+  final IconData? icon;
 
-  const _SectionTitle({
-    required this.title,
-    required this.icon,
-  });
+  const _SectionTitle({required this.title, this.icon});
 
   @override
   Widget build(BuildContext context) {
@@ -849,31 +694,179 @@ class _SectionTitle extends StatelessWidget {
           child: Text(
             title,
             style: const TextStyle(
-              color: AnalysisResultScreen.darkGreen,
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
+              color: AppColors.textDark,
+              fontSize: 19,
+              fontWeight: FontWeight.w800,
             ),
           ),
         ),
-        Icon(
-          icon,
-          color: const Color(0xFF87938C),
-          size: 17,
-        ),
+        if (icon != null)
+          Icon(icon, color: AppColors.mutedText, size: 22),
       ],
     );
   }
 }
 
-// NUMBERED ITEM
-class _NumberedItem extends StatelessWidget {
-  final String number;
-  final String text;
+/// "● Diseased" / "● Healthy"
+class _StatusPill extends StatelessWidget {
+  const _StatusPill({required this.isHealthy});
+  final bool isHealthy;
 
-  const _NumberedItem({
-    required this.number,
-    required this.text,
+  @override
+  Widget build(BuildContext context) {
+    final color = isHealthy ? AppColors.healthyGreen : AppColors.diseased;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: isHealthy ? AppColors.softGreen : const Color(0xFFFBE7DD),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 7,
+            height: 7,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            isHealthy ? 'Healthy' : 'Diseased',
+            style: TextStyle(
+              color: color,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// "● Needs assessment" (yellow) / "● Healthy" (green)
+class _SeverityPill extends StatelessWidget {
+  const _SeverityPill({required this.isHealthy});
+  final bool isHealthy;
+
+  @override
+  Widget build(BuildContext context) {
+    final color =
+        isHealthy ? AppColors.healthyGreen : const Color(0xFFB7791F);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+      decoration: BoxDecoration(
+        color: isHealthy ? AppColors.softGreen : const Color(0xFFFBEFCB),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 7,
+            height: 7,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            isHealthy ? 'Healthy' : 'Needs assessment',
+            style: TextStyle(
+              color: color,
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// One line of "Model predictions" with a bar.
+class _PredictionRow extends StatelessWidget {
+  const _PredictionRow({
+    required this.name,
+    required this.score,
+    required this.top,
   });
+
+  final String name;
+  final double score; // 0..1
+  final bool top; // highest prediction = green and bold
+
+  @override
+  Widget build(BuildContext context) {
+    final value = score.clamp(0.0, 1.0);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 24,
+            height: 24,
+            decoration: BoxDecoration(
+              color: top ? AppColors.softGreen : AppColors.pageBg,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.check_rounded,
+              size: 15,
+              color: top ? AppColors.healthyGreen : AppColors.mutedText,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        name,
+                        style: TextStyle(
+                          color:
+                              top ? AppColors.textDark : AppColors.mutedText,
+                          fontSize: 15,
+                          fontWeight: top ? FontWeight.w600 : FontWeight.w400,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      '${(value * 100).round()}%',
+                      style: const TextStyle(
+                        color: AppColors.textDark,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(3),
+                  child: LinearProgressIndicator(
+                    value: value,
+                    minHeight: 5,
+                    backgroundColor: AppColors.inputBorder,
+                    valueColor: const AlwaysStoppedAnimation<Color>(
+                        AppColors.healthyGreen),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Colored dot + text.
+class _BulletItem extends StatelessWidget {
+  const _BulletItem({required this.text, required this.color});
+  final String text;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
@@ -883,29 +876,18 @@ class _NumberedItem extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 20,
-            height: 20,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: const Color(0xFFE8F0E8),
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Text(
-              number,
-              style: const TextStyle(
-                color: AnalysisResultScreen.primaryGreen,
-                fontSize: 9,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
+            width: 8,
+            height: 8,
+            margin: const EdgeInsets.only(top: 7, left: 2),
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 14),
           Expanded(
             child: Text(
               text,
               style: const TextStyle(
-                color: AnalysisResultScreen.textGrey,
-                fontSize: 10,
+                color: AppColors.textDark,
+                fontSize: 15,
                 height: 1.4,
               ),
             ),
@@ -916,42 +898,86 @@ class _NumberedItem extends StatelessWidget {
   }
 }
 
-// CONFIDENCE CIRCLE
-class _ConfidenceCircle extends StatelessWidget {
-  final double confidence;
+/// Lime number circle + text. "Prune: cut..." shows "Prune:" in bold.
+class _NumberedItem extends StatelessWidget {
+  final String number;
+  final String text;
+  final bool showLine;
 
-  const _ConfidenceCircle({
-    required this.confidence,
+  const _NumberedItem({
+    required this.number,
+    required this.text,
+    this.showLine = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    final value = confidence.clamp(0.0, 1.0);
+    // Bold the short word before ":" (e.g. "Prune:")
+    final i = text.indexOf(':');
+    final hasLead = i > 0 && i < 25;
+    final lead = hasLead ? text.substring(0, i + 1) : '';
+    final rest = hasLead ? text.substring(i + 1) : text;
 
-    return SizedBox(
-      width: 58,
-      height: 58,
-      child: Stack(
-        alignment: Alignment.center,
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           SizedBox(
-            width: 54,
-            height: 54,
-            child: CircularProgressIndicator(
-              value: value,
-              strokeWidth: 5,
-              backgroundColor: const Color(0xFFDDEBE0),
-              valueColor: const AlwaysStoppedAnimation<Color>(
-                AnalysisResultScreen.primaryGreen,
-              ),
+            width: 28,
+            child: Column(
+              children: [
+                Container(
+                  width: 28,
+                  height: 28,
+                  alignment: Alignment.center,
+                  decoration: const BoxDecoration(
+                    color: AppColors.lime,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Text(
+                    number,
+                    style: const TextStyle(
+                      color: AppColors.primary,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                if (showLine)
+                  Expanded(
+                    child: Container(
+                      width: 2,
+                      margin: const EdgeInsets.symmetric(vertical: 3),
+                      color: AppColors.inputBorder,
+                    ),
+                  ),
+              ],
             ),
           ),
-          Text(
-            '${(value * 100).round()}%',
-            style: const TextStyle(
-              color: AnalysisResultScreen.primaryGreen,
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
+          const SizedBox(width: 12),
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(top: 4, bottom: showLine ? 14 : 0),
+              child: Text.rich(
+                TextSpan(
+                  style: const TextStyle(
+                    color: AppColors.mutedText,
+                    fontSize: 15,
+                    height: 1.4,
+                  ),
+                  children: [
+                    if (hasLead)
+                      TextSpan(
+                        text: lead,
+                        style: const TextStyle(
+                          color: AppColors.textDark,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    TextSpan(text: rest),
+                  ],
+                ),
+              ),
             ),
           ),
         ],
@@ -960,38 +986,87 @@ class _ConfidenceCircle extends StatelessWidget {
   }
 }
 
-// CIRCLE ICON BUTTON
-class _CircleIconButton extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onTap;
+/// Small ring with a check mark (filled by the confidence).
+class _ConfidenceCircle extends StatelessWidget {
+  final double confidence; // 0..1
 
-  const _CircleIconButton({
-    required this.icon,
-    required this.onTap,
-  });
+  const _ConfidenceCircle({required this.confidence});
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.white,
-      shape: const CircleBorder(),
-      child: InkWell(
-        onTap: onTap,
-        customBorder: const CircleBorder(),
-        child: Container(
-          width: 38,
-          height: 38,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: const Color(0xFFE3E8E1),
+    final value = confidence.clamp(0.0, 1.0);
+    return SizedBox(
+      width: 40,
+      height: 40,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          SizedBox(
+            width: 38,
+            height: 38,
+            child: CircularProgressIndicator(
+              value: value,
+              strokeWidth: 4,
+              backgroundColor: AppColors.inputBorder,
+              valueColor:
+                  const AlwaysStoppedAnimation<Color>(AppColors.healthyGreen),
             ),
           ),
-          child: Icon(
-            icon,
-            color: const Color(0xFF5D6D64),
-            size: 18,
+          const Icon(Icons.check_rounded,
+              color: AppColors.healthyGreen, size: 20),
+        ],
+      ),
+    );
+  }
+}
+
+enum _PillStyle { dark, outline, soft }
+
+/// Full-width pill button in three styles.
+class _PillButton extends StatelessWidget {
+  const _PillButton({
+    required this.label,
+    required this.icon,
+    required this.style,
+    required this.onPressed,
+  });
+
+  final String label;
+  final IconData icon;
+  final _PillStyle style;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final Color bg = switch (style) {
+      _PillStyle.dark => AppColors.primary,
+      _PillStyle.outline => Colors.white,
+      _PillStyle.soft => const Color(0xFFE6F0E6),
+    };
+    final Color fg = style == _PillStyle.dark ? Colors.white : AppColors.primary;
+    final Color iconColor =
+        style == _PillStyle.dark ? AppColors.lime : AppColors.primary;
+
+    return SizedBox(
+      width: double.infinity,
+      height: 58,
+      child: OutlinedButton.icon(
+        onPressed: onPressed,
+        icon: Icon(icon, color: iconColor, size: 22),
+        label: Text(
+          label,
+          style: TextStyle(
+            color: fg,
+            fontSize: 17,
+            fontWeight: FontWeight.w700,
           ),
+        ),
+        style: OutlinedButton.styleFrom(
+          backgroundColor: bg,
+          shape: const StadiumBorder(),
+          side: style == _PillStyle.outline
+              ? const BorderSide(color: AppColors.primary, width: 1.6)
+              : BorderSide.none,
         ),
       ),
     );
